@@ -1,0 +1,25 @@
+# Web layer
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+pgvector==0.3.6
+
+# Models (Azure AI Foundry)
+# Chat is Claude, served on Foundry's Anthropic surface -> anthropic SDK.
+# Embeddings are text-embedding-3-large on the Azure OpenAI surface -> openai SDK.
+anthropic==0.121.0
+openai==1.59.6
+tiktoken==0.8.0
+
+# Ingestion
+httpx==0.28.1
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.0
+httpx==0.28.1

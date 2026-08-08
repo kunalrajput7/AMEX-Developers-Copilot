@@ -1,0 +1,52 @@
+# Minimum acceptable scores. run_eval.py exits non-zero if any gold-tier metric
+# falls below its threshold, which is what fails a CI build.
+#
+# ---------------------------------------------------------------------------
+# THESE FLOORS ARE SET FOR RUN-TO-RUN VARIANCE, NOT FROM A SINGLE BASELINE.
+# ---------------------------------------------------------------------------
+#
+# Two runs with identical code and the same judge (gpt-4.1), 2026-08-08:
+#
+#   metric                run A    run B    spread
+#   context_recall        1.000    0.960     0.040
+#   citation_recall       1.000    0.920     0.080
+#   reciprocal_rank       0.821    0.817     0.004
+#   faithfulness          0.976    0.912     0.064
+#   answer_relevance      0.988    0.920     0.068
+#   answer_correctness    0.980    0.920     0.060
+#
+# Three questions changed verdict between those runs with nothing changed.
+#
+# Two things cause that spread, and neither is a regression:
+#
+#   1. The agent's search queries vary between runs even at temperature 0.
+#      Model inference is not bit-deterministic. On one question the agent
+#      searched docs and found the README; on the next run it searched code
+#      and missed it. The *metric* is exact; the retrieval it measures is not.
+#      This applies to context_recall and citation_recall as much as to the
+#      judged metrics -- "exact" describes the arithmetic, not the pipeline.
+#
+#   2. There are only 25 gold questions, so ONE flipped question moves a
+#      metric by 0.040. Small-sample noise is amplified accordingly. Growing
+#      the gold set is the way to tighten these floors; nothing else will.
+#
+# So each floor sits roughly two questions BELOW the worse of the two runs. A
+# gate that trips on ordinary variance gets ignored within a week, which
+# protects nothing at all. These catch a sustained drop, not a coin flip.
+
+gold:
+  # Retrieval metrics. Computed by comparing URLs -- no model reads them, but
+  # they still depend on which chunks the agent chose to gather.
+  context_recall: 0.88 # runs: 0.960 / 1.000 -- allows 3 misses in 25
+  citation_recall: 0.80 # runs: 0.920 / 1.000 -- the most variable metric
+  reciprocal_rank: 0.70 # runs: 0.817 / 0.821 -- by far the most stable
+
+  # Generation metrics, scored by an independent model (gpt-4.1). Carries both
+  # the agent's variance and the judge's own, so the floors are looser.
+  faithfulness: 0.80 # runs: 0.912 / 0.976 -- watch this one; fabrication shows here first
+  answer_relevance: 0.80 # runs: 0.920 / 0.988
+  answer_correctness: 0.80 # runs: 0.920 / 0.980
+
+# The synthetic tier is generated from the corpus, so its reference answers are
+# a soft standard. Run for volume and trend; it does not gate the build.
+synthetic: {}

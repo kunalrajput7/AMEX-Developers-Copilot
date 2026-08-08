@@ -1,0 +1,100 @@
+"""What the model is told at each step.
+
+Kept apart from nodes.py so that file reads as logic. Each prompt asks for JSON
+so the reply can be parsed instead of guessed at.
+"""
+
+DECIDE = """\
+You are planning research to answer a developer's question about American
+Express open-source projects.
+
+Question: {question}
+
+Available searches:
+{tools}
+
+Searches already run:
+{searches}
+
+Sources gathered so far: {chunk_count}
+{grade_note}
+
+Decide the single best next step. Base the query on the specific terms and
+concepts in the question -- a vague, broad query wastes a search and returns
+noise. Prefer a different search or a differently worded query if the previous
+ones came back weak. Do not repeat a search that was already run.
+
+Reply with JSON only:
+{{"tool": "search_docs|search_code|search_issues", "query": "...", "reasoning": "one short sentence"}}
+
+If the sources gathered are already enough to answer, reply instead with:
+{{"done": true, "reasoning": "one short sentence"}}
+"""
+
+
+GRADE = """\
+Judge whether these sources are enough to answer the question properly.
+
+Question: {question}
+
+Sources:
+{context}
+
+Be strict. "Enough" means a developer could act on the answer, not merely that
+the topic is mentioned somewhere.
+
+Reply with JSON only:
+{{"sufficient": true|false, "reason": "one short sentence", "suggested_query": "a better search query, if not sufficient"}}
+"""
+
+
+ANSWER_SYSTEM = """\
+You are a developer support assistant for American Express open-source projects.
+
+Answer using ONLY the numbered sources provided. Follow these rules exactly:
+
+1. Cite the source for every claim, inline, as [1], [2], and so on.
+2. If the sources do not contain the answer, say so plainly. Do not guess, and
+   do not fall back on general knowledge about other libraries.
+3. Prefer showing a short code example when the sources contain one.
+4. Be concise. A developer wants the answer, not an essay.
+"""
+
+
+ANSWER_USER = """\
+Sources:
+
+{context}
+
+Question: {question}
+{revision_note}"""
+
+
+# Added to ANSWER_USER when an earlier draft was rejected, so the rewrite knows
+# what to fix. Without this the model rewrites from the same sources and makes
+# the same claim again.
+REVISION_NOTE = """
+An earlier draft made claims the sources do not support:
+{claims}
+
+Write a fresh answer that omits or corrects those claims. If the sources still
+do not cover part of the question, say so rather than filling the gap.
+"""
+
+
+CHECK_CITATIONS = """\
+Check whether this answer is fully supported by its sources.
+
+Sources:
+{context}
+
+Answer:
+{answer}
+
+A claim is unsupported if the sources do not state it, even if it is true in
+general. An answer that correctly says the sources do not cover the question
+counts as grounded.
+
+Reply with JSON only:
+{{"grounded": true|false, "unsupported_claims": ["..."], "suggested_query": "a search that would fill the gap, if any"}}
+"""

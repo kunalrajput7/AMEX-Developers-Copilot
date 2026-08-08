@@ -1,0 +1,66 @@
+# ---------------------------------------------------------------------------
+# Secrets — never commit these.
+#
+# backend/.env holds live API keys. .env.example is the committed template and
+# is force-included below; every other .env variant stays out.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+*.env
+!.env.example
+!**/.env.example
+
+# Credentials that sometimes end up in a project directory by accident
+*.pem
+*.key
+*.pfx
+credentials.json
+secrets.json
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---------------------------------------------------------------------------
+# Node / frontend
+# ---------------------------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# ---------------------------------------------------------------------------
+# Generated at runtime — reproducible, so not worth versioning
+# ---------------------------------------------------------------------------
+
+# Repositories cloned during ingestion. Hundreds of MB, and `run_ingestion.py`
+# re-fetches them on demand.
+.repo_cache/
+
+# Evaluation scorecards. One JSON per run; the numbers that matter are pinned
+# in eval/thresholds.yaml instead.
+backend/eval/results/
+
+# Written by the CI test step
+test-output.txt
+*.log
+
+# ---------------------------------------------------------------------------
+# Editors and operating systems
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

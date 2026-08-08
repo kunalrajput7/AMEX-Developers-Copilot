@@ -1,0 +1,166 @@
+name: Tests and evaluation gate
+
+# The point of this workflow: a pull request can compile, pass every unit test,
+# and still make the assistant worse at answering questions. The eval job is
+# what catches that -- it fails the build when answer quality regresses.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+
+    # Postgres is here for one reason: the stale-sweep tests. That code deletes
+    # rows and has already shipped a bug that silently destroyed valid content,
+    # so its tests need a real database. They skip themselves when Postgres is
+    # unreachable — which is right for a developer laptop and wrong for CI, so
+    # CI provides one and the assertion below proves they actually ran.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: copilot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d copilot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copilot
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      # A skipped test reports the same green tick as a passing one. The
+      # database-backed tests guard a destructive code path, so a skip here
+      # means the guard silently did not run -- treat that as a failure.
+      # pipefail is set explicitly because the default shell would otherwise
+      # let `tee` mask a pytest failure.
+      - name: Run tests
+        working-directory: backend
+        run: |
+          set -o pipefail
+          pytest -q -rs | tee test-output.txt
+          if grep -q "skipped" test-output.txt; then
+            echo "::error::Tests were skipped in CI. The database-backed tests must run here."
+            exit 1
+          fi
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  evaluation:
+    name: Evaluation gate
+    runs-on: ubuntu-latest
+    needs: tests
+
+    # Skipped on forks, where the secrets are not available. Without this the
+    # job fails for every outside contributor with a confusing auth error.
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: copilot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d copilot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copilot
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ANTHROPIC_FOUNDRY_BASE_URL: ${{ secrets.ANTHROPIC_FOUNDRY_BASE_URL }}
+      ANTHROPIC_FOUNDRY_API_KEY: ${{ secrets.ANTHROPIC_FOUNDRY_API_KEY }}
+      ANTHROPIC_CHAT_DEPLOYMENT: ${{ secrets.ANTHROPIC_CHAT_DEPLOYMENT }}
+      AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+      AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+      AZURE_OPENAI_EMBEDDING_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT }}
+      AZURE_OPENAI_JUDGE_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_JUDGE_DEPLOYMENT }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Verify model deployments
+        working-directory: backend
+        run: python scripts/check_models.py
+
+      # The knowledge base has to exist before anything can be evaluated. This
+      # is the slow step; the repo cache below keeps it from re-cloning on
+      # every run, and unchanged chunks are never re-embedded.
+      - name: Cache cloned repositories
+        uses: actions/cache@v4
+        with:
+          path: backend/.repo_cache
+          key: repo-cache-${{ hashFiles('backend/app/ingestion/repos.py') }}
+
+      - name: Build the knowledge base
+        working-directory: backend
+        run: python scripts/run_ingestion.py
+
+      # Gold tier only. It is the hand-written, trusted set, and it runs in a
+      # few minutes; the synthetic tier is for trend, not for gating, and
+      # running it here would triple the wall-clock and the token spend.
+      - name: Run the evaluation gate
+        working-directory: backend
+        run: python eval/run_eval.py --tier gold
+
+      - name: Upload the scorecard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: backend/eval/results/
