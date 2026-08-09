@@ -46,17 +46,37 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload)
 
 
+class TextFormatter(logging.Formatter):
+    """Human-readable output that still carries the structured fields.
+
+    A plain `logging.Formatter` drops anything passed via `extra`, which would
+    reduce the per-request line to the bare word "request" -- no latency, no
+    tokens, no cost. Since plain text is the default while developing, that is
+    exactly where those numbers are most useful.
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Return the record as a line, with any extra fields appended."""
+        base = super().format(record)
+        fields = getattr(record, "fields", {})
+        if not fields:
+            return base
+
+        rendered = " ".join(f"{key}={value}" for key, value in fields.items())
+        return f"{base} | {rendered}"
+
+
 def configure(json_logs: bool = True) -> None:
     """Install the log handler for the process.
 
     Plain text is easier to read while developing; JSON is what you want
-    anywhere the logs are collected.
+    anywhere the logs are collected. Both carry the same fields.
     """
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(
         JsonFormatter()
         if json_logs
-        else logging.Formatter("%(asctime)s %(levelname)s %(name)s - %(message)s")
+        else TextFormatter("%(asctime)s %(levelname)s %(name)s - %(message)s")
     )
 
     root = logging.getLogger()

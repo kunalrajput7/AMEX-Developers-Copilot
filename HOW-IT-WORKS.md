@@ -226,20 +226,58 @@ the corpus:
 to the reader, with the `[1]`, `[2]` markers renumbered to match. A listed
 source always means "this backs the answer."
 
+**Follow-up questions work.** Earlier turns travel with each request and are
+shown to the agent, so *"What about the .NET one?"* resolves into a real search:
+
+```
+Q: How do I authenticate with the Amex API using the Java client?
+   → search_docs: American Express Java client API authentication
+   → search_code: amex-api-java-client authentication credentials HttpClient
+
+Q: What about the .NET one?
+   → search_docs: amex-api-dotnet-client-core authentication
+```
+
+The second question is meaningless on its own; the agent rewrote the reference
+into the actual repository name before searching.
+
+History comes from the client on every request rather than a server-side
+session. That keeps the backend stateless — no sessions to expire, and no route
+by which one conversation could reach another — and it means the CLI can hold a
+conversation just as the web app does. Only the last six turns are sent, each
+truncated, so a long session doesn't crowd the retrieved sources out of the
+prompt.
+
 ### Layer 4 — Evaluation (how we know it's good)
 
 This is the layer that makes the difference between a demo and a system.
 
-**A set of real questions with known answers.** 25 hand-written questions, each
-with a reference answer and the source URL where the answer actually lives, plus
+**A set of real questions with known answers.** 32 hand-written questions, plus
 30 more generated from corpus chunks for volume.
+
+Two kinds, and the second is easy to forget:
+
+- **26 answerable questions**, each with a reference answer and the source URL
+  where the answer actually lives. Nearly half target the Amex API and SDK
+  repos, so the headline numbers describe the corpus the project is about
+  rather than whichever repo happened to have the most documentation.
+- **6 unanswerable questions** — Stripe webhooks, a Python SDK that doesn't
+  exist, Amex merchant fees, an invented `--deep-scan` flag. The only correct
+  response is to say so.
+
+Without that second group the harness measures accuracy and never measures
+honesty. Every answerable question rewards producing an answer, so a system
+that never refuses would score perfectly while being unusable in practice.
+These are scored on one metric — `refusal_correctness` — and answering anyway
+is its own failure category, because a confident answer to something the corpus
+never covered is a different kind of wrong from an imperfect one.
 
 The generated ones are written by the *judge* model, not the answering one. A
 model that authors its own exam gravitates toward questions it already handles
 well — the same bias as self-grading, one step earlier in the pipeline. So
 GPT-4.1 sets the paper and marks it; Claude sits it.
 
-**Six metrics, split by how much you should trust them:**
+**Seven metrics, split by how much you should trust them:**
 
 *Exact metrics* — computed by comparing URLs, with no model reading them:
 
@@ -290,36 +328,48 @@ below its floor, the run exits non-zero and **CI fails the pull request.**
 
 ## 5. What we measured
 
-Two runs over the 25 hand-written questions, with **identical code and the same
-independent judge** — shown as a pair on purpose, because one run on its own
-would be misleading:
+The 32-question gold set, judged by an independent model:
 
 ```
-metric                  run A    run B
-context_recall          1.000    0.960
-citation_recall         1.000    0.920
-reciprocal_rank         0.821    0.817
-faithfulness            0.976    0.912
-answer_relevance        0.988    0.920
-answer_correctness      0.980    0.920
+metric                score    n
+context_recall        0.923   26
+citation_recall       0.923   26
+reciprocal_rank       0.743   26
+faithfulness          0.969   26
+answer_relevance      0.985   26
+answer_correctness    0.965   26
+refusal_correctness   1.000    6
 
-passed:                 25/25    22/25
+passed: 30/32
 ```
 
 Per question: **~17 seconds, ~4.5 cents, 4 model calls.**
 
-**Read the spread, not the single number.** Three questions changed verdict
-between those two runs with nothing altered. Two causes, neither a regression:
+**`refusal_correctness` of 1.000 is the one to notice.** All six unanswerable
+questions were declined rather than answered — including an invented
+`--deep-scan` flag, which is plausible enough that inventing behaviour for it
+would have been the easy path.
+
+The two failures are both genuine retrieval misses on the same repository, and
+both were left red. In one, the answer sits plainly in a README and the agent
+ran a single code-only search before deciding it had enough. That is a real
+weakness in how readily the grading step accepts a thin result, and pretending
+otherwise by relabelling the expected source would have been the easy fix and
+the wrong one.
+
+**Read the spread, not the single number.** Two earlier runs with identical code
+differed by 0.04–0.08 on every metric, and three questions changed verdict. Two
+causes, neither a regression:
 
 1. **The agent's queries vary.** Model inference isn't bit-deterministic even at
    temperature 0, so the agent phrases its searches slightly differently and
    sometimes lands on a different corner of the corpus.
-2. **Twenty-five questions is a small sample.** One flipped question moves any
-   metric by 0.040, so ordinary noise looks dramatic.
+2. **The samples are small.** One flipped question moves a metric by 0.038 —
+   and among the six refusal cases, by 0.167.
 
-That second point is also the fix: **growing the gold set is the only thing that
-tightens these numbers.** Prompt tuning won't; the variance is in the sample
-size and the sampling, not the system.
+That second point is also the fix: **growing the question sets is the only thing
+that tightens these numbers.** Prompt tuning won't; the variance is in the
+sample size and the sampling, not the system.
 
 Thresholds are therefore set for the *spread*, not for a best run — each floor
 sits roughly two questions below the worse of the two. A gate that trips on a
@@ -408,9 +458,9 @@ backend/
     observability/       per-request latency, tokens, and cost
 
   eval/                  the quality harness
-    datasets/              the question sets (25 gold, 30 synthetic)
+    datasets/              the question sets (32 gold, 30 synthetic)
     generate_dataset.py    writes the synthetic set, using the judge model
-    evaluators.py          the six metrics + failure classifier
+    evaluators.py          the seven metrics + failure classifier
     run_eval.py            the scorecard and the gate
     thresholds.yaml        the pass marks, annotated with the runs behind them
 

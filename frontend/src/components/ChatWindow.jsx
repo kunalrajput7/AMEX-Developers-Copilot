@@ -29,6 +29,11 @@ export default function ChatWindow() {
     const trimmed = question.trim();
     if (!trimmed || isBusy) return;
 
+    // Captured before the new question is appended: the agent needs what came
+    // *before* this turn. Only role and content go over the wire — citations
+    // and grounding flags are for rendering, not for the model to re-read.
+    const history = messages.map(({ role, content }) => ({ role, content }));
+
     setMessages((current) => [...current, { role: 'user', content: trimmed }]);
     setInput('');
     setSteps([]);
@@ -36,7 +41,7 @@ export default function ChatWindow() {
     setIsBusy(true);
 
     try {
-      const result = await askQuestion(trimmed, (step) =>
+      const result = await askQuestion(trimmed, history, (step) =>
         setSteps((current) => [...current, step])
       );
 

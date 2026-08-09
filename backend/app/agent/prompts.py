@@ -4,10 +4,22 @@ Kept apart from nodes.py so that file reads as logic. Each prompt asks for JSON
 so the reply can be parsed instead of guessed at.
 """
 
+# Rendered into DECIDE and ANSWER_USER when the conversation has earlier turns.
+# Left out entirely on a first question, so a fresh conversation carries no
+# empty scaffolding into the prompt.
+HISTORY_BLOCK = """\
+Earlier in this conversation:
+{history}
+
+The question below may refer back to it -- "that", "the other one", "what about
+X" -- so read them together.
+"""
+
+
 DECIDE = """\
 You are planning research to answer a developer's question about American
 Express open-source projects.
-
+{history_block}
 Question: {question}
 
 Available searches:
@@ -20,8 +32,10 @@ Sources gathered so far: {chunk_count}
 {grade_note}
 
 Decide the single best next step. Base the query on the specific terms and
-concepts in the question -- a vague, broad query wastes a search and returns
-noise. Prefer a different search or a differently worded query if the previous
+concepts in the question, resolving anything it refers back to into explicit
+words -- the search runs against a corpus, not against this conversation, so a
+query like "the .NET version" finds nothing while "amex-api-dotnet-client-core
+authentication" does. A vague, broad query wastes a search and returns noise. Prefer a different search or a differently worded query if the previous
 ones came back weak. Do not repeat a search that was already run.
 
 Reply with JSON only:
@@ -65,7 +79,7 @@ ANSWER_USER = """\
 Sources:
 
 {context}
-
+{history_block}
 Question: {question}
 {revision_note}"""
 

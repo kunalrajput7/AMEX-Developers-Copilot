@@ -85,18 +85,19 @@ def build_graph(session: AsyncSession):
 
 
 async def answer_question(
-    session: AsyncSession, question: str
+    session: AsyncSession, question: str, history: str = ""
 ) -> tuple[str, list[RetrievedChunk], AgentState]:
-    """Run the agent over one question.
+    """Run the agent over one question, optionally in the context of earlier ones.
 
     Returns the answer, the sources it used, and the final state -- the state
     is what the caller logs to show how the agent got there.
     """
     graph = build_graph(session)
 
-    # Each question starts from a fresh state, so nothing carries over between
-    # requests or between users.
-    final: AgentState = await graph.ainvoke(new_state(question))
+    # Each question starts from a fresh state. Any conversation history comes in
+    # from the caller rather than a server-side store, so nothing carries over
+    # between requests or between users on its own.
+    final: AgentState = await graph.ainvoke(new_state(question, history))
 
     # The agent reads more than it uses. Show only what the answer cites, so a
     # listed source always means "this backs the answer".
@@ -116,7 +117,7 @@ async def answer_question(
 
 
 async def stream_question(
-    session: AsyncSession, question: str
+    session: AsyncSession, question: str, history: str = ""
 ) -> AsyncIterator[tuple[str, AgentState]]:
     """Run the agent, yielding (step name, state so far) as each step finishes.
 
@@ -125,7 +126,7 @@ async def stream_question(
     than tokens. The caller turns these into events for the UI.
     """
     graph = build_graph(session)
-    state = new_state(question)
+    state = new_state(question, history)
 
     async for step in graph.astream(state, stream_mode="updates"):
         for step_name, update in step.items():

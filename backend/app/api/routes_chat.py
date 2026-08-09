@@ -22,11 +22,29 @@ from app.agent.graph import answer_question, stream_question
 from app.agent.state import AgentState
 from app.db.database import get_session
 from app.retrieval.results import RetrievedChunk
-from app.schemas.chat import ChatRequest, ChatResponse, Citation
+from app.schemas.chat import ChatRequest, ChatResponse, Citation, Turn
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["chat"])
+
+# Assistant answers can run long, and only their gist is needed to make sense
+# of a follow-up. Truncating keeps a ten-turn conversation from dominating the
+# prompt and crowding out the retrieved sources.
+MAX_TURN_CHARS = 600
+
+
+def format_history(turns: list[Turn]) -> str:
+    """Render earlier turns as plain text for the agent's prompts."""
+    lines = []
+    for turn in turns:
+        speaker = "Developer" if turn.role == "user" else "Assistant"
+        text = " ".join(turn.content.split())
+        if len(text) > MAX_TURN_CHARS:
+            text = text[:MAX_TURN_CHARS].rstrip() + "..."
+        lines.append(f"{speaker}: {text}")
+
+    return "\n".join(lines)
 
 # What each agent step is called in the UI.
 STEP_LABELS = {
@@ -58,7 +76,9 @@ async def chat(
     session: AsyncSession = Depends(get_session),
 ) -> ChatResponse:
     """Answer a developer question from the knowledge base, with citations."""
-    answer, chunks, state = await answer_question(session, request.question)
+    answer, chunks, state = await answer_question(
+        session, request.question, format_history(request.recent_history())
+    )
 
     return ChatResponse(
         answer=answer,
@@ -75,13 +95,13 @@ def sse(event: dict) -> str:
 
 
 async def event_stream(
-    session: AsyncSession, question: str
+    session: AsyncSession, question: str, history: str = ""
 ) -> AsyncIterator[str]:
     """Yield SSE events describing the agent's progress, then its answer."""
     state: AgentState = {}
 
     try:
-        async for step_name, state in stream_question(session, question):
+        async for step_name, state in stream_question(session, question, history):
             label = STEP_LABELS.get(step_name, step_name)
 
             # The searches list is the most informative progress detail, so
@@ -120,7 +140,9 @@ async def chat_stream(
 ) -> StreamingResponse:
     """Answer a question, reporting each step of the agent as it happens."""
     return StreamingResponse(
-        event_stream(session, request.question),
+        event_stream(
+            session, request.question, format_history(request.recent_history())
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

@@ -17,6 +17,12 @@ class AgentState(TypedDict, total=False):
     # --- Input ---
     question: str
 
+    # Earlier turns, already trimmed, rendered as plain text. Needed because
+    # follow-ups are usually unintelligible alone: "what about the .NET one?"
+    # only means something next to the question before it. Empty for a first
+    # question, and never carried between requests -- the client sends it.
+    history: str
+
     # --- What it has searched so far ---
     # Every search it ran, as "tool: query". Shown to the model so it does not
     # repeat itself, and printed in logs so you can see how it reasoned.
@@ -44,10 +50,11 @@ class AgentState(TypedDict, total=False):
     unsupported_claims: list[str]  # what the last check rejected, fed to the rewrite
 
 
-def new_state(question: str) -> AgentState:
+def new_state(question: str, history: str = "") -> AgentState:
     """Return a fresh state for a question, with all counters at zero."""
     return AgentState(
         question=question,
+        history=history,
         searches=[],
         chunks=[],
         tool_calls_used=0,

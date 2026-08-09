@@ -24,6 +24,12 @@ MAX_REWRITES = 1
 _JSON_BLOCK = re.compile(r"\{.*\}", re.DOTALL)
 
 
+def history_block(state: AgentState) -> str:
+    """Render earlier turns for a prompt, or an empty string on a first question."""
+    history = state.get("history", "")
+    return prompts.HISTORY_BLOCK.format(history=history) if history else ""
+
+
 def parse_json_reply(text: str) -> dict:
     """Pull a JSON object out of a model reply.
 
@@ -50,6 +56,7 @@ async def decide(state: AgentState) -> dict:
 
     prompt = prompts.DECIDE.format(
         question=state["question"],
+        history_block=history_block(state),
         tools=tools.tool_descriptions(),
         searches="\n".join(f"- {entry}" for entry in searches) or "(none yet)",
         chunk_count=len(state.get("chunks", [])),
@@ -151,6 +158,7 @@ async def generate(state: AgentState) -> dict:
                 "role": "user",
                 "content": prompts.ANSWER_USER.format(
                     context=format_for_prompt(chunks),
+                    history_block=history_block(state),
                     question=state["question"],
                     revision_note=revision_note,
                 ),

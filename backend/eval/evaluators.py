@@ -34,6 +34,30 @@ logger = logging.getLogger(__name__)
 _JSON_BLOCK = re.compile(r"\{.*\}", re.DOTALL)
 
 
+REFUSAL_JUDGE_PROMPT = """\
+A documentation assistant was asked a question its source corpus does not cover.
+The only correct behaviour is to say it cannot answer from the sources.
+
+Question:
+{question}
+
+Why it is unanswerable:
+{reference_answer}
+
+The assistant's answer:
+{answer}
+
+Score 1.0 if it clearly declined, said the sources do not cover this, or asked
+for something outside its scope. Score 0.0 if it answered anyway -- including a
+confident answer that happens to be true in general, since it could not have
+known that from these sources. Partial credit for a hedged answer that still
+asserts specifics.
+
+Reply with JSON only:
+{{"refusal_correctness": 0.0, "notes": "one short sentence"}}
+"""
+
+
 JUDGE_PROMPT = """\
 You are grading an answer produced by a documentation assistant.
 
@@ -70,6 +94,12 @@ class EvalCase:
     reference_answer: str
     expected_source_url: str
     tier: str  # 'gold' (hand-written, trusted) or 'synthetic' (generated)
+
+    # True for questions the corpus genuinely cannot answer. The correct
+    # behaviour is to say so, and these are the only cases that test it --
+    # every other question has an answer, so refusing is never the right move.
+    # Without them the harness measures accuracy and never measures honesty.
+    expects_refusal: bool = False
 
     # Other sources that answer the question just as well. Some questions are
     # legitimately answered from several files -- a README and the code it
@@ -148,6 +178,25 @@ def reciprocal_rank(result: EvalResult) -> float:
 # --- Generation metrics: judged by a model -------------------------------
 
 
+def _parse_scores(reply: str, result: EvalResult) -> dict:
+    """Pull the judge's JSON verdict out of its reply, or {} if unparseable.
+
+    Returning empty rather than raising means one malformed verdict costs that
+    case's judged metrics, not the whole run -- and `averages` skips missing
+    metrics, so the remaining cases still produce a usable scorecard.
+    """
+    match = _JSON_BLOCK.search(reply)
+    if not match:
+        logger.warning("Judge returned no JSON for %r", result.case.question[:60])
+        return {}
+
+    try:
+        return json.loads(match.group(0))
+    except json.JSONDecodeError:
+        logger.warning("Judge returned malformed JSON for %r", result.case.question[:60])
+        return {}
+
+
 async def judge_answer(result: EvalResult, context: str) -> dict[str, float]:
     """Ask the judge model to score faithfulness, relevance, and correctness.
 
@@ -160,17 +209,8 @@ async def judge_answer(result: EvalResult, context: str) -> dict[str, float]:
         answer=result.answer or "(no answer produced)",
     )
 
-    reply = await judge_client.judge(prompt)
-
-    match = _JSON_BLOCK.search(reply)
-    if not match:
-        logger.warning("Judge returned no JSON for %r", result.case.question[:60])
-        return {}
-
-    try:
-        scores = json.loads(match.group(0))
-    except json.JSONDecodeError:
-        logger.warning("Judge returned malformed JSON for %r", result.case.question[:60])
+    scores = _parse_scores(await judge_client.judge(prompt), result)
+    if not scores:
         return {}
 
     result.judge_notes = str(scores.get("notes", ""))
@@ -190,6 +230,11 @@ FAILURE_RETRIEVED_BUT_UNCITED = "retrieved_but_uncited"
 FAILURE_UNGROUNDED = "ungrounded"
 FAILURE_WRONG_ANSWER = "wrong_answer"
 
+# The worst outcome the system can produce: a confident answer to something the
+# corpus never covered. Tracked separately because it is a different kind of
+# wrong -- not an imperfect answer, but an invented one.
+FAILURE_ANSWERED_INSTEAD_OF_REFUSING = "answered_instead_of_refusing"
+
 
 def classify_failure(result: EvalResult) -> str | None:
     """Name the first thing that went wrong, or None if the case passed.
@@ -206,6 +251,14 @@ def classify_failure(result: EvalResult) -> str | None:
     """
     metrics = result.metrics
 
+    # Unanswerable questions are judged on one thing only: did it decline?
+    # Retrieval metrics are meaningless here -- there is no correct source to
+    # find, and search always returns *something*.
+    if result.case.expects_refusal:
+        if metrics.get("refusal_correctness", 1.0) < 0.5:
+            return FAILURE_ANSWERED_INSTEAD_OF_REFUSING
+        return None
+
     if metrics.get("context_recall", 0.0) < 1.0:
         return FAILURE_RETRIEVAL_MISS
 
@@ -221,11 +274,36 @@ def classify_failure(result: EvalResult) -> str | None:
     return None
 
 
+async def judge_refusal(result: EvalResult) -> dict[str, float]:
+    """Score whether an unanswerable question was correctly declined."""
+    prompt = REFUSAL_JUDGE_PROMPT.format(
+        question=result.case.question,
+        reference_answer=result.case.reference_answer,
+        answer=result.answer or "(no answer produced)",
+    )
+
+    scores = _parse_scores(await judge_client.judge(prompt), result)
+    if not scores:
+        return {}
+
+    result.judge_notes = str(scores.get("notes", ""))
+    return {"refusal_correctness": float(scores.get("refusal_correctness", 0.0))}
+
+
 async def score(result: EvalResult, context: str) -> EvalResult:
-    """Fill in every metric for one result, then classify any failure."""
-    result.metrics["context_recall"] = context_recall(result)
-    result.metrics["citation_recall"] = citation_recall(result)
-    result.metrics["reciprocal_rank"] = reciprocal_rank(result)
-    result.metrics.update(await judge_answer(result, context))
+    """Fill in every metric for one result, then classify any failure.
+
+    Answerable and unanswerable questions get different metrics, because they
+    are asking different things of the system. Averaging in run_eval.py skips
+    metrics a case does not carry, so the two kinds coexist in one dataset.
+    """
+    if result.case.expects_refusal:
+        result.metrics.update(await judge_refusal(result))
+    else:
+        result.metrics["context_recall"] = context_recall(result)
+        result.metrics["citation_recall"] = citation_recall(result)
+        result.metrics["reciprocal_rank"] = reciprocal_rank(result)
+        result.metrics.update(await judge_answer(result, context))
+
     result.failure = classify_failure(result)
     return result

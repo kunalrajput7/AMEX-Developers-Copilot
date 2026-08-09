@@ -37,6 +37,9 @@ METRIC_ORDER = [
     "faithfulness",
     "answer_relevance",
     "answer_correctness",
+    # Only the unanswerable questions carry this one, so it averages over a
+    # different (smaller) set than the metrics above.
+    "refusal_correctness",
 ]
 
 # How many questions run at once. Each question costs the agent several model
@@ -105,7 +108,11 @@ async def run_case(case: EvalCase, semaphore: asyncio.Semaphore) -> EvalResult:
             searches=state.get("searches", []),
         )
 
-        print(f"  scored: {case.question[:64]}")
+        # flush because a full run takes many minutes under rate limiting, and
+        # Python buffers stdout when it is redirected to a file or a pipe.
+        # Without this the log stays empty until the very end, and a slow run
+        # is indistinguishable from a hung one.
+        print(f"  scored: {case.question[:64]}", flush=True)
         return await score(result, format_for_prompt(retrieved))
 
 
@@ -129,10 +136,14 @@ def print_scorecard(results: list[EvalResult], means: dict[str, float]) -> None:
     print(f"judge: {judge_client.describe()}")
     print("=" * 62)
 
+    # Each metric shows how many cases it covers, because they no longer all
+    # cover the same ones -- refusal_correctness applies only to the
+    # unanswerable questions, the rest only to the answerable ones.
     for metric in METRIC_ORDER:
         if metric in means:
+            covered = sum(1 for r in results if metric in r.metrics)
             bar = "#" * round(means[metric] * 30)
-            print(f"  {metric:<20} {means[metric]:.3f}  {bar}")
+            print(f"  {metric:<20} {means[metric]:.3f}  n={covered:<3} {bar}")
 
     # An average says quality moved; the breakdown says where to look.
     failures = [r for r in results if r.failure]

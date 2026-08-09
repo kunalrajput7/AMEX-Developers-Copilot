@@ -35,6 +35,10 @@ Three things make it more than a chatbot:
 - **A real agent loop.** It picks which corpus to search, judges whether the
   results are good enough, retries with better wording, then verifies every
   claim it wrote is backed by a source — capped at 5 searches per question.
+- **Follow-up questions work.** Ask *"How do I authenticate with the Java
+  client?"*, then *"What about the .NET one?"*, and the second resolves into a
+  real search (`amex-api-dotnet-client-core authentication`). History travels
+  with each request, so the backend stays stateless.
 - **A quality gate in CI.** A set of real questions runs on every pull request.
   If answers get worse, **the build fails** — even though the code compiles and
   every unit test passes.
@@ -168,6 +172,8 @@ python scripts/check_models.py                  # verify all three deployments
 python scripts/run_ingestion.py --dry-run       # build the knowledge base
 python scripts/search.py "query" --method all   # retrieval only, no model
 python scripts/ask.py "question" --trace        # the agent, showing its steps
+python scripts/ask.py "How do I authenticate with the Java client?" \
+  --follow-up "What about the .NET one?"        # check follow-ups resolve
 python eval/run_eval.py                         # scorecard and quality gate
 ```
 
@@ -194,9 +200,16 @@ python eval/run_eval.py --tier all         # gold + synthetic
 python eval/generate_dataset.py --count 40 # rebuild the synthetic tier
 ```
 
-Two tiers: 25 hand-written questions that gate the build, and 30 generated ones
-for volume and trend. Six metrics — three computed from URLs, three scored by
-the judge model.
+Two tiers: 32 hand-written questions that gate the build, and 30 generated ones
+for volume and trend.
+
+Seven metrics: three computed from URLs, three scored by the judge, and
+`refusal_correctness` for the unanswerable cases.
+
+The gold tier is **26 answerable questions plus 6 unanswerable ones** — Stripe
+webhooks, a Python SDK that doesn't exist, an invented CLI flag. Those last six
+are the only cases that test whether the assistant says "I don't know" instead
+of inventing, since every answerable question rewards producing an answer.
 
 **Read the spread, not a single run.** Two runs with identical code differ by
 0.04–0.08 on every metric, because the agent writes its own search queries and

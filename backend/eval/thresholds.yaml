@@ -2,50 +2,56 @@
 # falls below its threshold, which is what fails a CI build.
 #
 # ---------------------------------------------------------------------------
-# THESE FLOORS ARE SET FOR RUN-TO-RUN VARIANCE, NOT FROM A SINGLE BASELINE.
+# SET FOR RUN-TO-RUN VARIANCE, NOT FROM A SINGLE GOOD RUN.
 # ---------------------------------------------------------------------------
 #
-# Two runs with identical code and the same judge (gpt-4.1), 2026-08-08:
+# Baseline over the 32-question gold set, judged by gpt-4.1 (2026-08-09):
 #
-#   metric                run A    run B    spread
-#   context_recall        1.000    0.960     0.040
-#   citation_recall       1.000    0.920     0.080
-#   reciprocal_rank       0.821    0.817     0.004
-#   faithfulness          0.976    0.912     0.064
-#   answer_relevance      0.988    0.920     0.068
-#   answer_correctness    0.980    0.920     0.060
+#   metric                score    n    notes
+#   context_recall        0.923    26
+#   citation_recall       0.923    26
+#   reciprocal_rank       0.743    26   most sensitive to query phrasing
+#   faithfulness          0.969    26
+#   answer_relevance      0.985    26
+#   answer_correctness    0.965    26
+#   refusal_correctness   1.000     6   all six declined correctly
 #
-# Three questions changed verdict between those runs with nothing changed.
+#   passed 30/32 -- two retrieval misses, both real
 #
-# Two things cause that spread, and neither is a regression:
+# Earlier runs on the smaller 25-question set showed a spread of 0.04 to 0.08
+# on every metric with identical code, and three questions changing verdict.
+# Two things cause that, and neither is a regression:
 #
-#   1. The agent's search queries vary between runs even at temperature 0.
-#      Model inference is not bit-deterministic. On one question the agent
-#      searched docs and found the README; on the next run it searched code
-#      and missed it. The *metric* is exact; the retrieval it measures is not.
-#      This applies to context_recall and citation_recall as much as to the
-#      judged metrics -- "exact" describes the arithmetic, not the pipeline.
+#   1. The agent writes its own search queries, and model inference is not
+#      bit-deterministic. The same question can be searched two different ways
+#      on two runs, landing in different corners of the corpus.
+#   2. Small samples amplify it. With 26 answerable questions one flip moves a
+#      metric by 0.038; with only 6 refusal questions one flip moves it by
+#      0.167. Growing the sets is the only thing that tightens these floors.
 #
-#   2. There are only 25 gold questions, so ONE flipped question moves a
-#      metric by 0.040. Small-sample noise is amplified accordingly. Growing
-#      the gold set is the way to tighten these floors; nothing else will.
-#
-# So each floor sits roughly two questions BELOW the worse of the two runs. A
-# gate that trips on ordinary variance gets ignored within a week, which
-# protects nothing at all. These catch a sustained drop, not a coin flip.
+# Each floor therefore sits roughly two questions below the measured score. A
+# gate that trips on a coin flip gets ignored within a week, and an ignored
+# gate protects nothing.
 
 gold:
-  # Retrieval metrics. Computed by comparing URLs -- no model reads them, but
-  # they still depend on which chunks the agent chose to gather.
-  context_recall: 0.88 # runs: 0.960 / 1.000 -- allows 3 misses in 25
-  citation_recall: 0.80 # runs: 0.920 / 1.000 -- the most variable metric
-  reciprocal_rank: 0.70 # runs: 0.817 / 0.821 -- by far the most stable
+  # Retrieval. Computed by comparing URLs -- no model reads them, but they
+  # still depend on which chunks the agent chose to gather.
+  context_recall: 0.85 # 0.923 measured; allows 4 misses in 26
+  citation_recall: 0.80 # 0.923 measured
+  reciprocal_rank: 0.62 # 0.743 measured; ranking degrades before recall does
 
-  # Generation metrics, scored by an independent model (gpt-4.1). Carries both
-  # the agent's variance and the judge's own, so the floors are looser.
-  faithfulness: 0.80 # runs: 0.912 / 0.976 -- watch this one; fabrication shows here first
-  answer_relevance: 0.80 # runs: 0.920 / 0.988
-  answer_correctness: 0.80 # runs: 0.920 / 0.980
+  # Generation, scored by the independent judge. Carries the agent's variance
+  # and the judge's own, so slightly looser.
+  faithfulness: 0.85 # 0.969 measured; fabrication shows here first
+  answer_relevance: 0.85 # 0.985 measured
+  answer_correctness: 0.85 # 0.965 measured
+
+  # Honesty: of the questions the corpus cannot answer, how many were declined
+  # rather than answered anyway. Deliberately the loosest floor, purely because
+  # n=6 -- one flip is 0.167, so anything tighter would fail on noise. This is
+  # the number to tighten first as more refusal cases are added; the behaviour
+  # it measures matters more than any other on this list.
+  refusal_correctness: 0.66 # 1.000 measured; allows 2 of 6 to slip
 
 # The synthetic tier is generated from the corpus, so its reference answers are
 # a soft standard. Run for volume and trend; it does not gate the build.

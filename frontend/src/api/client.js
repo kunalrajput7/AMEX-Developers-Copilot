@@ -14,16 +14,21 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 /**
  * Ask a question, calling onStep as the agent works and returning the answer.
  *
+ * History travels with every request rather than living on the server. That
+ * keeps the backend stateless — no sessions to expire, no chance of one
+ * conversation reaching another — and lets any surface hold a conversation.
+ *
  * @param {string} question
+ * @param {{role: 'user'|'assistant', content: string}[]} history earlier turns, oldest first
  * @param {(step: {step: string, label: string, detail: string}) => void} onStep
  * @param {AbortSignal} [signal]
  * @returns {Promise<{answer: string, citations: object[], is_grounded: boolean, searches: string[]}>}
  */
-export async function askQuestion(question, onStep, signal) {
+export async function askQuestion(question, history, onStep, signal) {
   const response = await fetch(`${API_URL}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, history }),
     signal,
   });
 
