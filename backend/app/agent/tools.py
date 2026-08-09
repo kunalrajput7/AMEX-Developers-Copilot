@@ -22,18 +22,23 @@ RESULTS_PER_SEARCH = 6
 TOOLS: dict[str, tuple[str, str]] = {
     "search_docs": (
         "doc",
-        "READMEs and documentation. Best for setup, configuration, and "
-        "'how do I' questions.",
+        "READMEs and documentation. Start here for anything a library "
+        "documents about itself: setup, configuration, options, error types "
+        "it defines, what it supports, and 'how do I' questions. If the "
+        "answer would plausibly appear in a README, this is the tool.",
     ),
     "search_code": (
         "code",
-        "Source code. Best for exact function names, options, and how "
-        "something is actually implemented.",
+        "Source code. Best when you need the implementation itself -- a "
+        "function's exact signature, internal behaviour, or a concrete usage "
+        "example. Weaker for questions a README already answers, because a "
+        "matching filename is not the same as a matching answer.",
     ),
     "search_issues": (
         "issue",
-        "Closed GitHub issues. Best for errors, edge cases, and problems "
-        "other developers already hit.",
+        "Closed GitHub issues. Best for a specific failure someone else hit: "
+        "a stack trace, a version conflict, surprising behaviour. Not for "
+        "questions about which errors a library defines -- that is documented.",
     ),
 }
 

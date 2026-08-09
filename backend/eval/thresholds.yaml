@@ -5,18 +5,32 @@
 # SET FOR RUN-TO-RUN VARIANCE, NOT FROM A SINGLE GOOD RUN.
 # ---------------------------------------------------------------------------
 #
-# Baseline over the 32-question gold set, judged by gpt-4.1 (2026-08-09):
+# The 32-question gold set, judged by gpt-4.1 (2026-08-09):
 #
-#   metric                score    n    notes
-#   context_recall        0.923    26
-#   citation_recall       0.923    26
-#   reciprocal_rank       0.743    26   most sensitive to query phrasing
-#   faithfulness          0.969    26
-#   answer_relevance      0.985    26
-#   answer_correctness    0.965    26
-#   refusal_correctness   1.000     6   all six declined correctly
+#   metric                before   after    n
+#   context_recall         0.923   1.000   26
+#   citation_recall        0.923   1.000   26
+#   reciprocal_rank        0.743   0.833   26
+#   faithfulness           0.969   0.985   26
+#   answer_relevance       0.985   1.000   26
+#   answer_correctness     0.965   0.973   26
+#   refusal_correctness    1.000   1.000    6
 #
-#   passed 30/32 -- two retrieval misses, both real
+#   passed                 30/32   32/32
+#
+# "before" had two retrieval misses. Both were the agent's own doing rather
+# than a retrieval limit -- the right source ranked first for a well-formed
+# query, but the agent searched the wrong corpus for one and paraphrased the
+# question into generic words for the other. Fixed by sharpening the tool
+# descriptions, telling DECIDE to keep the question's distinctive wording, and
+# showing GRADE the searches already run so it stops accepting a single thin
+# result. No threshold was moved to make them pass.
+#
+# THE FLOORS BELOW ARE DELIBERATELY NOT RAISED TO MATCH THE PERFECT RUN.
+# That is one run. Measured variance on this system is 0.04 to 0.08 per metric,
+# so the next run may well show a failure or two with nothing changed. Raising
+# floors to a best-ever result is how a gate starts failing honest work. Raise
+# them only once several runs agree on a higher level.
 #
 # Earlier runs on the smaller 25-question set showed a spread of 0.04 to 0.08
 # on every metric with identical code, and three questions changing verdict.

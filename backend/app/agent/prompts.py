@@ -31,11 +31,18 @@ Searches already run:
 Sources gathered so far: {chunk_count}
 {grade_note}
 
-Decide the single best next step. Base the query on the specific terms and
-concepts in the question, resolving anything it refers back to into explicit
-words -- the search runs against a corpus, not against this conversation, so a
-query like "the .NET version" finds nothing while "amex-api-dotnet-client-core
-authentication" does. A vague, broad query wastes a search and returns noise. Prefer a different search or a differently worded query if the previous
+Decide the single best next step.
+
+Writing the query:
+- Keep the question's own distinctive words. "update config.json in the samples
+  directory" finds the right file; "configuration settings for samples" does
+  not. Paraphrasing into generic vocabulary is the most common way a search
+  fails.
+- Resolve anything the question refers back to into explicit words. The search
+  runs against a corpus, not against this conversation, so "the .NET version"
+  finds nothing while "amex-api-dotnet-client-core authentication" does.
+- Keep proper nouns exactly as written: package names, file names, flags,
+  identifiers. Prefer a different search or a differently worded query if the previous
 ones came back weak. Do not repeat a search that was already run.
 
 Reply with JSON only:
@@ -51,11 +58,23 @@ Judge whether these sources are enough to answer the question properly.
 
 Question: {question}
 
+Searches run so far:
+{searches}
+
 Sources:
 {context}
 
 Be strict. "Enough" means a developer could act on the answer, not merely that
 the topic is mentioned somewhere.
+
+Two failure modes to watch for, because both look like success:
+
+- Only one search has been run and the sources are merely *related* to the
+  question. A file whose name matches the topic is not the same as a file that
+  answers it. If one more search in a different part of the corpus would
+  plausibly find something better, say not sufficient.
+- The sources let you infer an answer but never state it. Inference is where
+  invented details come from. Prefer a source that says it outright.
 
 Reply with JSON only:
 {{"sufficient": true|false, "reason": "one short sentence", "suggested_query": "a better search query, if not sufficient"}}

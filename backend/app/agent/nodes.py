@@ -109,8 +109,12 @@ async def grade(state: AgentState) -> dict:
     if not chunks:
         return {"grade_reason": "no sources found yet"}
 
+    # The searches so far are part of the judgement: one search returning
+    # loosely-related files is a weaker position than three that converged.
+    searches = state.get("searches", [])
     prompt = prompts.GRADE.format(
         question=state["question"],
+        searches="\n".join(f"- {entry}" for entry in searches) or "(none)",
         context=format_for_prompt(chunks),
     )
 
