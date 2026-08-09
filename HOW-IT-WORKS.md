@@ -331,16 +331,16 @@ below its floor, the run exits non-zero and **CI fails the pull request.**
 The 32-question gold set, judged by an independent model:
 
 ```
-metric                score    n
-context_recall        0.923   26
-citation_recall       0.923   26
-reciprocal_rank       0.743   26
-faithfulness          0.969   26
-answer_relevance      0.985   26
-answer_correctness    0.965   26
-refusal_correctness   1.000    6
+metric                before   after    n
+context_recall         0.923   1.000   26
+citation_recall        0.923   1.000   26
+reciprocal_rank        0.743   0.833   26
+faithfulness           0.969   0.985   26
+answer_relevance       0.985   1.000   26
+answer_correctness     0.965   0.973   26
+refusal_correctness    1.000   1.000    6
 
-passed: 30/32
+passed                 30/32   32/32
 ```
 
 Per question: **~17 seconds, ~4.5 cents, 4 model calls.**
@@ -350,12 +350,26 @@ questions were declined rather than answered — including an invented
 `--deep-scan` flag, which is plausible enough that inventing behaviour for it
 would have been the easy path.
 
-The two failures are both genuine retrieval misses on the same repository, and
-both were left red. In one, the answer sits plainly in a README and the agent
-ran a single code-only search before deciding it had enough. That is a real
-weakness in how readily the grading step accepts a thin result, and pretending
-otherwise by relabelling the expected source would have been the easy fix and
-the wrong one.
+**How the two failures were fixed matters more than the fact that they were.**
+The tempting fix is to add whatever the agent actually cited to the list of
+acceptable sources, which turns any miss green without changing anything. So
+both were left red while the cause was found, and the rule was that a source
+may only be added after opening the file and confirming it answers the question
+on its own merits — never *because* the agent cited it. Neither question needed
+that; the dataset is unchanged.
+
+Retrieval turned out not to be the problem. Both questions ranked the correct
+source **first** once the query was well formed. The agent was searching the
+wrong corpus for a question a README answers, and paraphrasing the other
+question into generic vocabulary that matched nothing. The fixes were to the
+agent: tool descriptions that say which corpus answers which kind of question,
+an instruction to keep the question's distinctive wording, and showing the
+grading step which searches have already run so it stops accepting one thin
+result. No threshold was moved.
+
+**The floors were left where they were.** Nothing above is a reason to raise a
+gate to 1.000 — see the spread below. Raising floors to match a best-ever run
+is how a gate starts failing honest work and gets ignored.
 
 **Read the spread, not the single number.** Two earlier runs with identical code
 differed by 0.04–0.08 on every metric, and three questions changed verdict. Two

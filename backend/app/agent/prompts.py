@@ -42,8 +42,9 @@ Writing the query:
   runs against a corpus, not against this conversation, so "the .NET version"
   finds nothing while "amex-api-dotnet-client-core authentication" does.
 - Keep proper nouns exactly as written: package names, file names, flags,
-  identifiers. Prefer a different search or a differently worded query if the previous
-ones came back weak. Do not repeat a search that was already run.
+  identifiers.
+- Never repeat a search already run. If the previous results were weak, change
+  something real -- a different tool, or genuinely different wording.
 
 Reply with JSON only:
 {{"tool": "search_docs|search_code|search_issues", "query": "...", "reasoning": "one short sentence"}}
