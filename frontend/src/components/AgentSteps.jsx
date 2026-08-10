@@ -15,36 +15,43 @@ export default function AgentSteps({ steps, done, bare = false }) {
 
   const frame = bare
     ? ''
-    : 'animate-fade-up rounded-lg border border-slate-700 bg-slate-800/40 p-3';
+    : 'animate-fade-up rounded-xl border border-line bg-surface px-3.5 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
 
   return (
-    <div className={`${frame} text-sm`}>
-      <ol className="space-y-1.5">
+    <div className={frame}>
+      <ol className="space-y-2">
         {steps.map((step, index) => {
           const isCurrent = !done && index === steps.length - 1;
 
           return (
-            <li key={index} className="flex items-start gap-2">
+            <li key={index} className="flex items-start gap-2.5 text-sm">
+              {/* A filled dot for finished steps, a ring for the one running. */}
               <span
-                className={
-                  isCurrent ? 'mt-0.5 text-sky-400' : 'mt-0.5 text-emerald-500'
-                }
-              >
-                {isCurrent ? '>' : 'v'}
-              </span>
-              <span className="flex-1">
+                className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${
+                  isCurrent
+                    ? 'bg-accent ring-4 ring-accent/15'
+                    : 'bg-line-strong'
+                }`}
+              />
+              <span className="min-w-0 flex-1">
                 <span
-                  className={isCurrent ? 'text-slate-200' : 'text-slate-400'}
+                  className={
+                    isCurrent ? 'font-medium text-ink' : 'text-muted'
+                  }
                 >
                   {step.label}
                 </span>
                 {step.detail && (
-                  <span className="ml-2 break-all font-mono text-xs text-slate-500">
+                  <span className="ml-2 break-all font-mono text-[11px] text-faint">
                     {step.detail}
                   </span>
                 )}
               </span>
-              {isCurrent && <LoadingDots />}
+              {isCurrent && (
+                <span className="mt-1.5 shrink-0">
+                  <LoadingDots />
+                </span>
+              )}
             </li>
           );
         })}

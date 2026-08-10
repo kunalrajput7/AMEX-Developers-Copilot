@@ -1,8 +1,41 @@
 @import 'tailwindcss';
 
-/* Two animations, both small: messages fade up as they arrive, and the
-   loading dots pulse while the agent works. Anything more would distract
-   from the answer, which is the thing people came for. */
+/* A light, near-monochrome palette. Named by role rather than by colour, so a
+   component says `bg-surface` instead of `bg-white` and the theme can move
+   without touching every file.
+
+   Warm greys rather than pure white and blue-grey: long-form text on a paper
+   tone is easier to sit with than on #fff, and this screen is mostly text. */
+@theme {
+  --color-canvas: #faf9f8; /* page background */
+  --color-surface: #ffffff; /* cards, bubbles, input */
+  --color-sunken: #f5f4f2; /* code blocks, insets, hover fills */
+  --color-line: #e8e6e3; /* borders */
+  --color-line-strong: #d6d3d0; /* borders that need to be seen */
+
+  --color-ink: #1c1a18; /* primary text */
+  --color-muted: #6b6560; /* secondary text */
+  --color-faint: #9a938c; /* labels, timestamps */
+
+  --color-accent: #1a56db; /* links and focus only, used sparingly */
+  --color-accent-soft: #eef2ff;
+
+  --color-good: #047857;
+  --color-warn: #b45309;
+  --color-bad: #b91c1c;
+}
+
+html {
+  background-color: var(--color-canvas);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Messages fade up as they arrive. Anything more would distract from the
+   answer, which is the thing people came for. */
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -18,45 +51,109 @@
   animation: fade-up 0.25s ease-out;
 }
 
-/* Markdown answers render as plain HTML, so the useful tags get styled here
-   rather than pulling in a typography plugin for a handful of rules. */
-.markdown h2 {
-  @apply mt-5 mb-2 text-lg font-semibold text-slate-100;
+/* A caret that trails the text while an answer is revealing. */
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
-.markdown h3 {
-  @apply mt-4 mb-2 text-base font-semibold text-slate-200;
+.caret::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background-color: var(--color-faint);
+  animation: caret-blink 1s step-end infinite;
+}
+
+/* Respect a reader who has asked the OS for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .caret::after {
+    animation: none;
+  }
+}
+
+/* A restrained scrollbar. The default Windows one is heavy enough to read as
+   part of the design, which it should not be. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+/* Markdown answers render as plain HTML, so the useful tags get styled here
+   rather than pulling in a typography plugin for a handful of rules. */
+.markdown {
+  @apply text-[15px] leading-relaxed text-ink;
+}
+
+.markdown h1,
+.markdown h2 {
+  @apply mt-5 mb-2 text-base font-semibold tracking-tight text-ink first:mt-0;
+}
+
+.markdown h3,
+.markdown h4 {
+  @apply mt-4 mb-1.5 text-[15px] font-semibold text-ink first:mt-0;
 }
 
 .markdown p {
-  @apply mb-3 leading-relaxed;
+  @apply mb-3 last:mb-0;
 }
 
 .markdown ul,
 .markdown ol {
-  @apply mb-3 ml-5 list-outside space-y-1;
+  @apply mb-3 ml-5 list-outside space-y-1 last:mb-0;
 }
 
 .markdown ul {
-  @apply list-disc;
+  @apply list-disc marker:text-faint;
 }
 
 .markdown ol {
-  @apply list-decimal;
+  @apply list-decimal marker:text-faint;
+}
+
+.markdown strong {
+  @apply font-semibold text-ink;
 }
 
 .markdown a {
-  @apply text-sky-400 underline underline-offset-2 hover:text-sky-300;
+  @apply text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent;
 }
 
 .markdown code {
-  @apply rounded bg-slate-950/60 px-1.5 py-0.5 font-mono text-[0.85em] text-sky-300;
+  @apply rounded border border-line bg-sunken px-1.5 py-0.5 font-mono text-[0.85em] text-ink;
 }
 
 .markdown pre {
-  @apply mb-3 overflow-x-auto rounded-lg border border-slate-700 bg-slate-950 p-3;
+  @apply mb-3 overflow-x-auto rounded-lg border border-line bg-sunken p-3.5 last:mb-0;
 }
 
 .markdown pre code {
-  @apply bg-transparent p-0 text-slate-200;
+  @apply border-0 bg-transparent p-0 text-[13px] leading-relaxed;
+}
+
+.markdown blockquote {
+  @apply mb-3 border-l-2 border-line-strong pl-3 text-muted;
+}
+
+.markdown table {
+  @apply mb-3 w-full border-collapse text-sm;
+}
+
+.markdown th,
+.markdown td {
+  @apply border border-line px-2.5 py-1.5 text-left;
+}
+
+.markdown th {
+  @apply bg-sunken font-semibold;
 }

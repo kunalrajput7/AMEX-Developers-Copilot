@@ -6,9 +6,9 @@ import useTypewriter from '../hooks/useTypewriter';
 /**
  * One message in the conversation.
  *
- * Questions render as plain text on the right. Answers render as markdown on
- * the left, preceded by what the agent did to get there and followed by the
- * sources they cite.
+ * Questions render as a solid bubble on the right. Answers render as markdown
+ * on a plain card, preceded by what the agent did to get there and followed by
+ * the sources they cite.
  */
 export default function MessageBubble({ message, animate = false }) {
   const { visible, isTyping, finish } = useTypewriter(
@@ -19,7 +19,7 @@ export default function MessageBubble({ message, animate = false }) {
   if (message.role === 'user') {
     return (
       <div className="animate-fade-up flex justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-sky-600 px-4 py-2.5 text-white">
+        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-ink px-4 py-2.5 text-[15px] leading-relaxed text-white">
           {message.content}
         </div>
       </div>
@@ -27,18 +27,18 @@ export default function MessageBubble({ message, animate = false }) {
   }
 
   return (
-    <div className="animate-fade-up space-y-3">
+    <div className="animate-fade-up space-y-2.5">
       {/* The reasoning stays available after the answer arrives. Watching it
           live is the interesting part, but "why did it say that" is asked
           afterwards -- so it collapses rather than disappearing. */}
       {message.steps?.length > 0 && (
-        <details className="group rounded-lg border border-slate-700/70 bg-slate-800/30">
-          <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-slate-200">
-            <span className="transition-transform group-open:rotate-90">
+        <details className="group w-fit max-w-full overflow-hidden rounded-lg border border-line bg-surface">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-1.5 text-xs text-muted transition-colors hover:bg-sunken">
+            <span className="text-faint transition-transform group-open:rotate-90">
               &rsaquo;
             </span>
-            <span>Thought</span>
-            <span className="text-slate-600">
+            <span className="font-medium">Thought</span>
+            <span className="text-faint">
               {message.steps.length} steps
               {message.searchCount > 0 &&
                 ` · ${message.searchCount} ${
@@ -46,18 +46,18 @@ export default function MessageBubble({ message, animate = false }) {
                 }`}
             </span>
           </summary>
-          <div className="border-t border-slate-700/70 p-3 pt-2">
+          <div className="border-t border-line bg-sunken/50 px-3 py-2.5">
             <AgentSteps steps={message.steps} done bare />
           </div>
         </details>
       )}
 
       <div
-        className="max-w-[92%] rounded-2xl rounded-bl-sm border border-slate-700 bg-slate-800/60 px-4 py-3"
+        className="rounded-2xl rounded-bl-md border border-line bg-surface px-4 py-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
         onClick={isTyping ? finish : undefined}
         title={isTyping ? 'Click to show the whole answer' : undefined}
       >
-        <div className="markdown text-slate-200">
+        <div className={`markdown ${isTyping ? 'caret' : ''}`}>
           <ReactMarkdown>{visible}</ReactMarkdown>
         </div>
 
@@ -66,7 +66,7 @@ export default function MessageBubble({ message, animate = false }) {
             still be right, but the reader deserves to know it is unverified.
             Held back until the text finishes so it cannot flash mid-reveal. */}
         {message.isGrounded === false && !isTyping && (
-          <p className="mt-3 rounded border border-amber-700/40 bg-amber-900/20 px-2.5 py-1.5 text-xs text-amber-300">
+          <p className="mt-3 rounded-md border border-warn/25 bg-warn/5 px-3 py-2 text-xs leading-relaxed text-warn">
             Some claims in this answer could not be traced back to a source.
             Check the citations before relying on it.
           </p>
@@ -74,8 +74,8 @@ export default function MessageBubble({ message, animate = false }) {
       </div>
 
       {message.citations?.length > 0 && !isTyping && (
-        <div>
-          <h3 className="mb-2 text-xs uppercase tracking-wide text-slate-500">
+        <div className="pt-1">
+          <h3 className="mb-2 text-[11px] font-medium uppercase tracking-wider text-faint">
             Sources
           </h3>
           <div className="grid gap-2 sm:grid-cols-2">
