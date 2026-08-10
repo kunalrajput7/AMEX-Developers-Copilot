@@ -14,6 +14,7 @@ from app.agent import prompts, tools
 from app.agent.state import AgentState, merge_chunks
 from app.config import settings
 from app.llm import chat_client
+from app.retrieval.corpus import list_repos
 from app.retrieval.results import format_for_prompt
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,62 @@ def parse_json_reply(text: str) -> dict:
     except json.JSONDecodeError:
         logger.warning("Malformed JSON in model reply: %r", match.group(0)[:200])
         return {}
+
+
+SEARCH_ROUTE = "search"
+DIRECT_ROUTES = ("smalltalk", "about")
+
+
+async def triage(state: AgentState) -> dict:
+    """Decide whether this message needs the knowledge base at all."""
+    prompt = prompts.TRIAGE.format(
+        question=state["question"], history_block=history_block(state)
+    )
+
+    reply = await chat_client.chat_text([{"role": "user", "content": prompt}])
+    route = parse_json_reply(reply).get("route", "")
+
+    # Anything unrecognised, including a reply that failed to parse, searches.
+    # Being sent to retrieval costs a few seconds; skipping it wrongly means
+    # answering a technical question with no sources at all.
+    if route not in DIRECT_ROUTES:
+        route = SEARCH_ROUTE
+
+    logger.info("triage -> %s", route)
+    return {"route": route}
+
+
+async def respond_directly(state: AgentState, session: AsyncSession) -> dict:
+    """Reply to a greeting or a question about the assistant, without retrieval.
+
+    Marked grounded because these replies make no claim about the repositories.
+    The citation check exists to catch invented technical detail, and there is
+    no source material here for it to check against.
+
+    The one factual claim this path can make is which projects it covers, so
+    that list is read from the database rather than left to the model's memory.
+    """
+    is_small_talk = state.get("route") == "smalltalk"
+    template = prompts.SMALL_TALK if is_small_talk else prompts.ABOUT
+
+    # Only the "about" prompt has a {repos} slot; format ignores the rest.
+    repos = [] if is_small_talk else await list_repos(session)
+
+    reply = await chat_client.chat_text(
+        [
+            {
+                "role": "user",
+                "content": template.format(
+                    question=state["question"],
+                    history_block=history_block(state),
+                    repos="\n".join(f"- {repo}" for repo in repos),
+                ),
+            }
+        ]
+    )
+
+    logger.info("respond_directly -> %s, %d chars", state.get("route"), len(reply))
+    return {"answer": reply.strip(), "is_grounded": True}
 
 
 async def decide(state: AgentState) -> dict:

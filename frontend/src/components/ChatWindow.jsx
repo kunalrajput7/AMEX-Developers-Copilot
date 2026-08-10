@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { askQuestion } from '../api/client';
 import AgentSteps from './AgentSteps';
+import LoadingDots from './LoadingDots';
 import MessageBubble from './MessageBubble';
 
 const EXAMPLES = [
@@ -17,6 +18,10 @@ export default function ChatWindow() {
   const [steps, setSteps] = useState([]);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState(null);
+
+  // Only the newest answer animates in. Appending the next message flips this,
+  // which completes the previous one instantly instead of replaying it.
+  const [animatingIndex, setAnimatingIndex] = useState(-1);
 
   const bottomRef = useRef(null);
 
@@ -41,19 +46,28 @@ export default function ChatWindow() {
     setIsBusy(true);
 
     try {
-      const result = await askQuestion(trimmed, history, (step) =>
-        setSteps((current) => [...current, step])
-      );
+      const collected = [];
+      const result = await askQuestion(trimmed, history, (step) => {
+        collected.push(step);
+        setSteps([...collected]);
+      });
 
-      setMessages((current) => [
-        ...current,
-        {
-          role: 'assistant',
-          content: result.answer,
-          citations: result.citations,
-          isGrounded: result.is_grounded,
-        },
-      ]);
+      setMessages((current) => {
+        setAnimatingIndex(current.length);
+        return [
+          ...current,
+          {
+            role: 'assistant',
+            content: result.answer,
+            citations: result.citations,
+            isGrounded: result.is_grounded,
+            // Kept with the message so the reasoning survives the next
+            // question, instead of being wiped with the live step list.
+            steps: collected,
+            searchCount: result.searches?.length ?? 0,
+          },
+        ];
+      });
     } catch (failure) {
       setError(failure.message);
     } finally {
@@ -99,10 +113,25 @@ export default function ChatWindow() {
 
         <div className="mx-auto max-w-3xl space-y-6">
           {messages.map((message, index) => (
-            <MessageBubble key={index} message={message} />
+            <MessageBubble
+              key={index}
+              message={message}
+              animate={index === animatingIndex}
+            />
           ))}
 
-          {isBusy && <AgentSteps steps={steps} done={false} />}
+          {/* The first step takes a couple of seconds to arrive, and an empty
+              screen in that gap reads as a hang. Something moves immediately. */}
+          {isBusy && steps.length === 0 && (
+            <div className="animate-fade-up flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/40 p-3 text-sm text-slate-400">
+              <LoadingDots />
+              <span>Thinking</span>
+            </div>
+          )}
+
+          {isBusy && steps.length > 0 && (
+            <AgentSteps steps={steps} done={false} />
+          )}
 
           {error && (
             <div className="animate-fade-up rounded-lg border border-red-800 bg-red-950/40 p-3 text-sm text-red-300">

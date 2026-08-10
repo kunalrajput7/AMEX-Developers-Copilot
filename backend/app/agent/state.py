@@ -37,6 +37,12 @@ class AgentState(TypedDict, total=False):
     # guard against an agent looping forever on a question it cannot answer.
     tool_calls_used: int
 
+    # --- Routing ---
+    # "search" runs the full retrieval loop. "smalltalk" and "about" answer
+    # directly without touching the knowledge base, because a greeting has
+    # nothing to retrieve. Defaults to "search" whenever triage is unsure.
+    route: str
+
     # --- What the last step decided ---
     next_tool: str  # which search to run next
     next_query: str  # what to search for
@@ -58,6 +64,7 @@ def new_state(question: str, history: str = "") -> AgentState:
         searches=[],
         chunks=[],
         tool_calls_used=0,
+        route="search",
         next_tool="",
         next_query="",
         done_searching=False,

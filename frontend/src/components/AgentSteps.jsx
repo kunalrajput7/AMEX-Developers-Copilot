@@ -1,17 +1,24 @@
 import LoadingDots from './LoadingDots';
 
 /**
- * The agent's progress, shown live while it works.
+ * The agent's progress.
  *
  * Worth showing rather than a spinner: the agent genuinely takes 15-30 seconds,
  * and watching it search, reject weak sources, and search again is the most
  * interesting thing it does. A spinner would just look broken.
+ *
+ * Shown live while it works, and again -- collapsed, with `bare` -- inside the
+ * finished message, so the reasoning behind an answer stays inspectable.
  */
-export default function AgentSteps({ steps, done }) {
+export default function AgentSteps({ steps, done, bare = false }) {
   if (steps.length === 0) return null;
 
+  const frame = bare
+    ? ''
+    : 'animate-fade-up rounded-lg border border-slate-700 bg-slate-800/40 p-3';
+
   return (
-    <div className="animate-fade-up rounded-lg border border-slate-700 bg-slate-800/40 p-3 text-sm">
+    <div className={`${frame} text-sm`}>
       <ol className="space-y-1.5">
         {steps.map((step, index) => {
           const isCurrent = !done && index === steps.length - 1;
@@ -32,7 +39,7 @@ export default function AgentSteps({ steps, done }) {
                   {step.label}
                 </span>
                 {step.detail && (
-                  <span className="ml-2 font-mono text-xs text-slate-500">
+                  <span className="ml-2 break-all font-mono text-xs text-slate-500">
                     {step.detail}
                   </span>
                 )}

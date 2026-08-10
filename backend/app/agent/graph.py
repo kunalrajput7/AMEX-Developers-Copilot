@@ -2,6 +2,10 @@
 
 The loop, in words:
 
+    triage the message
+      -> a greeting or a question about the assistant? reply and stop.
+      -> otherwise, research it:
+
     decide what to search for
       -> run the search
       -> grade what came back
@@ -27,6 +31,17 @@ from app.agent.state import AgentState, new_state
 from app.retrieval.results import RetrievedChunk
 
 logger = logging.getLogger(__name__)
+
+
+def after_triage(state: AgentState) -> str:
+    """Send greetings straight to a reply; research everything else.
+
+    Tested against the recognised routes rather than against "search", so an
+    unexpected value falls through to retrieval. The two mistakes are not equal:
+    searching a greeting wastes a few seconds, while replying directly to a
+    technical question answers it with no sources at all.
+    """
+    return "respond" if state.get("route") in nodes.DIRECT_ROUTES else "decide"
 
 
 def after_decide(state: AgentState) -> str:
@@ -68,13 +83,17 @@ def build_graph(session: AsyncSession):
     """
     graph = StateGraph(AgentState)
 
+    graph.add_node("triage", nodes.triage)
+    graph.add_node("respond", partial(nodes.respond_directly, session=session))
     graph.add_node("decide", nodes.decide)
     graph.add_node("retrieve", partial(nodes.retrieve, session=session))
     graph.add_node("grade", nodes.grade)
     graph.add_node("generate", nodes.generate)
     graph.add_node("check_citations", nodes.check_citations)
 
-    graph.add_edge(START, "decide")
+    graph.add_edge(START, "triage")
+    graph.add_conditional_edges("triage", after_triage, ["decide", "respond"])
+    graph.add_edge("respond", END)
     graph.add_conditional_edges("decide", after_decide, ["retrieve", "generate"])
     graph.add_edge("retrieve", "grade")
     graph.add_conditional_edges("grade", after_grade, ["decide", "generate"])

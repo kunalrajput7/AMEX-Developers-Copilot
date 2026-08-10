@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import routes_chat, routes_health
+from app.api import routes_chat, routes_eval, routes_health
 from app.db import database
 from app.observability import logging as observability
 
@@ -57,3 +57,4 @@ app.add_middleware(
 
 app.include_router(routes_health.router)
 app.include_router(routes_chat.router)
+app.include_router(routes_eval.router)

@@ -77,6 +77,21 @@ export async function askQuestion(question, history, onStep, signal) {
   return result;
 }
 
+/**
+ * Fetch the most recent evaluation run.
+ *
+ * Returns null when the backend has no results yet, which the panel shows as
+ * "not run" rather than as an error — a fresh clone genuinely has none.
+ */
+export async function fetchEvaluation() {
+  const response = await fetch(`${API_URL}/eval/latest`);
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`Backend returned ${response.status}`);
+  }
+  return response.json();
+}
+
 /** Return true if the backend is up and its database is ready. */
 export async function checkHealth() {
   try {

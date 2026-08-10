@@ -39,7 +39,8 @@ Two things make it more than a demo:
 
 - **It is an agent, not a search box.** It decides what to look for, judges
   whether what it found is good enough, and searches again with better wording
-  when it isn't.
+  when it isn't. It also decides when *not* to search: a greeting gets a
+  greeting, not a report that the repositories contain no matches.
 - **Its quality is measured, and the measurement blocks bad releases.** A test
   suite of real questions runs in CI. If answers get worse, the build fails —
   even though the code compiles and every unit test passes.
@@ -464,7 +465,7 @@ backend/
       state.py             what it knows at each step
       tools.py             the three searches it may run
       prompts.py           what the model is told
-      nodes.py             the five steps
+      nodes.py             the agent's steps
       graph.py             how the steps connect
       citations.py         keep only what the answer used
 

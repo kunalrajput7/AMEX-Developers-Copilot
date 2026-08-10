@@ -48,6 +48,8 @@ def format_history(turns: list[Turn]) -> str:
 
 # What each agent step is called in the UI.
 STEP_LABELS = {
+    "triage": "Reading the question",
+    "respond": "Replying",
     "decide": "Deciding what to look for",
     "retrieve": "Searching the knowledge base",
     "grade": "Checking whether the sources are enough",
