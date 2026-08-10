@@ -8,6 +8,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Lets the evaluation be run deliberately -- after tuning a prompt, say --
+  # without pushing a commit to trigger it.
+  workflow_dispatch:
 
 jobs:
   tests:
@@ -122,19 +125,38 @@ jobs:
       AZURE_OPENAI_JUDGE_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_JUDGE_DEPLOYMENT }}
 
     steps:
+      # Running the gate costs real model calls, so it needs credentials that
+      # only this repository has. A clone, a fork, or this repo before its
+      # secrets are configured has none -- and failing the build for that would
+      # report a missing API key as if the assistant had got worse. Every step
+      # below is conditional on this one, so the job goes green and says why.
+      - name: Check for model credentials
+        id: creds
+        run: |
+          if [ -n "$ANTHROPIC_FOUNDRY_API_KEY" ] && [ -n "$AZURE_OPENAI_API_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Evaluation skipped::No model credentials are configured for this repository, so answer quality was not measured. Unit tests and the frontend build still ran."
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.creds.outputs.configured == 'true'
 
       - uses: actions/setup-python@v5
+        if: steps.creds.outputs.configured == 'true'
         with:
           python-version: "3.11"
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
+        if: steps.creds.outputs.configured == 'true'
         working-directory: backend
         run: pip install -r requirements.txt
 
       - name: Verify model deployments
+        if: steps.creds.outputs.configured == 'true'
         working-directory: backend
         run: python scripts/check_models.py
 
@@ -142,12 +164,14 @@ jobs:
       # is the slow step; the repo cache below keeps it from re-cloning on
       # every run, and unchanged chunks are never re-embedded.
       - name: Cache cloned repositories
+        if: steps.creds.outputs.configured == 'true'
         uses: actions/cache@v4
         with:
           path: backend/.repo_cache
           key: repo-cache-${{ hashFiles('backend/app/ingestion/repos.py') }}
 
       - name: Build the knowledge base
+        if: steps.creds.outputs.configured == 'true'
         working-directory: backend
         run: python scripts/run_ingestion.py
 
@@ -155,11 +179,12 @@ jobs:
       # few minutes; the synthetic tier is for trend, not for gating, and
       # running it here would triple the wall-clock and the token spend.
       - name: Run the evaluation gate
+        if: steps.creds.outputs.configured == 'true'
         working-directory: backend
         run: python eval/run_eval.py --tier gold
 
       - name: Upload the scorecard
-        if: always()
+        if: always() && steps.creds.outputs.configured == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: eval-results

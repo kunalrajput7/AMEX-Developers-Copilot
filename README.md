@@ -1,8 +1,16 @@
 # Amex Developer Copilot
 
+[![Tests and evaluation gate](https://github.com/kunalrajput7/AMEX-Developers-Copilot/actions/workflows/eval.yml/badge.svg)](https://github.com/kunalrajput7/AMEX-Developers-Copilot/actions/workflows/eval.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 An agentic knowledge assistant over American Express's public open-source
 repositories. Ask a developer question, get an answer where **every claim links
 to the file it came from** — and where answer quality is measured, not asserted.
+
+> An independent personal project. Not affiliated with, endorsed by, or
+> supported by American Express. It reads their public repositories the same way
+> anyone else can, and the American Express name is used only to say which
+> repositories those are.
 
 > **Want to understand how it works?** → **[HOW-IT-WORKS.md](HOW-IT-WORKS.md)**
 > walks one question through the whole system and explains every design

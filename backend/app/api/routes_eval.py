@@ -41,11 +41,23 @@ EXACT_METRICS = {"context_recall", "citation_recall", "reciprocal_rank"}
 
 
 def latest_results_file() -> Path | None:
-    """Return the newest eval result file, or None if none have been written."""
+    """Return the newest local run, else the committed baseline, else None.
+
+    Local runs are timestamped and git-ignored, so a machine that has run the
+    evaluation shows its own numbers. A fresh clone has none of those and falls
+    back to baseline.json, which is committed -- otherwise the panel would be
+    empty for everyone who has not spent twenty minutes and real model calls
+    reproducing a result that was already recorded.
+    """
     if not RESULTS_DIR.is_dir():
         return None
+
     runs = sorted(RESULTS_DIR.glob("eval-*.json"))
-    return runs[-1] if runs else None
+    if runs:
+        return runs[-1]
+
+    baseline = RESULTS_DIR / "baseline.json"
+    return baseline if baseline.is_file() else None
 
 
 def load_thresholds() -> dict[str, float]:

@@ -48,9 +48,12 @@ dist-ssr/
 # re-fetches them on demand.
 .repo_cache/
 
-# Evaluation scorecards. One JSON per run; the numbers that matter are pinned
-# in eval/thresholds.yaml instead.
-backend/eval/results/
+# Evaluation scorecards. One JSON per run, so local runs pile up and stay out
+# of the repo -- except one committed baseline. That file is what the
+# Evaluation tab reads on a fresh clone, so the scores are visible without
+# spending 20 minutes and real model calls to reproduce them.
+backend/eval/results/*
+!backend/eval/results/baseline.json
 
 # Written by the CI test step
 test-output.txt

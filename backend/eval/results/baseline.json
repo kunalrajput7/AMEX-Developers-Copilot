@@ -1,0 +1,735 @@
+{
+  "run_at": "20260809-025440",
+  "judge": "gpt-4.1 (independent of the agent)",
+  "averages": {
+    "context_recall": 1.0,
+    "citation_recall": 1.0,
+    "reciprocal_rank": 0.8328754578754579,
+    "faithfulness": 0.9846153846153847,
+    "answer_relevance": 1.0,
+    "answer_correctness": 0.9730769230769231,
+    "refusal_correctness": 1.0
+  },
+  "cases": [
+    {
+      "question": "How do I authenticate with the Amex API using the Java client?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/amex-api-java-client-core/blob/master/README.md",
+      "answer": "## Authenticating with the Amex API using the Java Client\n\nThe `amex-api-java-client-core` library handles authentication by generating Amex-specific headers [1]. There are two auth providers depending on the API: **HMAC** and **API Key**.\n\n---\n\n### 1. HMAC Authentication (most APIs)\n\nSet up a `PropertiesConfigurationProvider` with your `CLIENT_KEY` and `CLIENT_SECRET`, then build an `HmacAuthBuilder` and call `generateAuthHeaders()` [2][3]:\n\n```java\nProperties properties = new Properties();\nproperties.put(\"CLIENT_KEY\", CLIENT_ID);\nproperties.put(\"CLIENT_SECRET\", CLIENT_SECRET);\nPropertiesConfigurationProvider configurationProvider = new PropertiesConfigurationProvider();\nconfigurationProvider.setProperties(properties);\n\nAuthProvider authProvider = HmacAuthBuilder.getBuilder()\n        .setConfiguration(configurationProvider)\n        .build();\n\n// Generate headers for your request (payload, url, HTTP method)\nMap<String, String> headers = authProvider.generateAuthHeaders(payload, url, \"POST\");\n```\n\nThen attach the headers to your HTTP request [3]:\n```java\nfor (Map.Entry<String, String> header : headers.entrySet()) {\n    builder.addHeader(header.getKey(), header.getValue());\n}\n```\n\nThe generated headers include an `Authorization` (MAC format), `X-AMEX-API-KEY`, and `X-AMEX-REQUEST-ID` [2].\n\n---\n\n### 2. API Key Authentication (e.g., ATM Locator)\n\nUse `ApiKeyAuthBuilder` instead \u2014 only `CLIENT_KEY` is required [4]:\n\n```java\nProperties properties = new Properties();\nproperties.put(\"CLIENT_KEY\", CLIENT_ID);\n// ...\nAuthProvider authProvider = ApiKeyAuthBuilder.getBuilder()\n        .setConfiguration(configurationProvider)\n        .build();\n\nMap<String, String> headers = authProvider.generateAuthHeaders(null, url, \"GET\");\n```\n\n---\n\n### Sample APIs available\nCode samples are provided for ATM Locator, Card Application Offers, Enhanced Authorization, Pay With Rewards, B2B Payments, and Token Service [5].",
+      "cited_urls": [
+        "https://github.com/americanexpress/amex-api-java-client-core/blob/master/README.md",
+        "https://github.com/americanexpress/amex-api-java-client-core/blob/master/src/main/java/io/aexp/api/client/core/security/authentication/HmacAuthProvider.java",
+        "https://github.com/americanexpress/amex-api-java-client-core/blob/master/samples/paywithrewards/PayWithRewardsClient.java",
+        "https://github.com/americanexpress/amex-api-java-client-core/blob/master/samples/amexatmlocator/AmexATMLocatorClient.java",
+        "https://github.com/americanexpress/amex-api-java-client-core/blob/master/samples/README.md"
+      ],
+      "searches": [
+        "search_docs: Amex API Java client authentication",
+        "search_code: amex-api-java-client authentication credentials configure"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 0.9,
+        "answer_relevance": 1.0,
+        "answer_correctness": 0.8
+      },
+      "failure": null,
+      "judge_notes": "The answer is mostly faithful and relevant, but it incorrectly includes API Key authentication and omits the use of AuthProvider in client.execute(), which is required per the reference answer."
+    },
+    {
+      "question": "What does the amex-api-java-client-core library actually do for me?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/amex-api-java-client-core/blob/master/README.md",
+      "answer": "Based on the sources, the **amex-api-java-client-core** library encapsulates header creation necessary to authenticate with APIs published to the [Amex for Developers](https://developer.americanexpress.com) portal. [1]\n\nIt also provides code samples for several callable APIs, including: [2]\n\n- Amex ATM Locator\n- Amex Card Application Offers\n- Enhanced Authorization\n- Pay With Rewards\n- Amex B2B Payments\n- Amex Token Service\n\nBeyond that, the sources don't provide further technical detail on the library's internals or specific methods.",
+      "cited_urls": [
+        "https://github.com/americanexpress/amex-api-java-client-core/blob/master/README.md",
+        "https://github.com/americanexpress/amex-api-java-client-core/blob/master/samples/README.md"
+      ],
+      "searches": [
+        "search_docs: amex-api-java-client-core library overview"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 0.8,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The answer is mostly faithful and relevant, but it adds a list of APIs which is not directly asked for and not central to the reference answer."
+    },
+    {
+      "question": "Is there a .NET version of the Amex API client library?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/amex-api-dotnet-client-core/blob/master/README.md",
+      "answer": "Yes, there is a .NET version called **amex-api-dotnet-client-core**. [1]\n\nIt encapsulates header creation necessary to authenticate with APIs published to the Amex for Developers portal, and its artifacts are available on **NuGet**. [1]\n\nCode samples are provided for the following APIs: [2]\n\n- Amex ATM Locator\n- Amex Card Application Offers\n- Enhanced Authorization\n- Pay With Rewards\n- Amex B2B Payments",
+      "cited_urls": [
+        "https://github.com/americanexpress/amex-api-dotnet-client-core/blob/master/README.md",
+        "https://github.com/americanexpress/amex-api-dotnet-client-core/blob/master/samples/README.md"
+      ],
+      "searches": [
+        "search_docs: amex-api-dotnet-client-core .NET American Express API client"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported by the sources and the answer matches the reference."
+    },
+    {
+      "question": "Which Amex APIs have ready-made code samples in the Java client repo?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/amex-api-java-client-core/blob/master/samples/README.md",
+      "answer": "Based on the samples README for the Java client repo, the following APIs have ready-made code samples [1]:\n\n1. **Amex ATM Locator**\n2. **Amex Card Application Offers**\n3. **Enhanced Authorization**\n4. **Pay With Rewards**\n5. **Amex B2B Payments**\n6. **Amex Token Service**",
+      "cited_urls": [
+        "https://github.com/americanexpress/amex-api-java-client-core/blob/master/samples/README.md"
+      ],
+      "searches": [
+        "search_docs: Java client repo code samples API examples"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 0.5,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The answer is fully supported by source [2], directly addresses the question, and matches the reference answer with additional APIs."
+    },
+    {
+      "question": "What is the Amex Default Offers API for?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md",
+      "answer": "Based on the sources, the Default Offers API **allows a Partner to request AMEX's standard card offers and display them to prospective customers** [1].\n\nThe Node SDK for it reduces the complexity of coding service layer integration with the Default Offers API, assuming you have already set up your credentials with American Express and have your certs prepared [1].",
+      "cited_urls": [
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: Amex Default Offers API"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The answer is fully supported by the sources, directly addresses the question, and matches the reference answer."
+    },
+    {
+      "question": "How long is the access token valid in the default offers Node client?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md",
+      "answer": "Based on the sample response shown in the README, the access token expires in **3599 seconds** (approximately 1 hour) [1]:\n\n```js\n{\n  scope: 'default',\n  status: 'approved',\n  expires_in: '3599', // token expiry in seconds, you can cache the token for the amount of time specified.\n  token_type: 'BearerToken',\n  access_token: 'access token example'\n}\n```\n\nYou can cache the token for the duration specified in the `expires_in` field [2].",
+      "cited_urls": [
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md",
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: access token valid default offers Node client"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported by the sources, the answer is relevant, and it matches the reference answer."
+    },
+    {
+      "question": "What error types does the default offers Node SDK throw?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md",
+      "answer": "The Default Offers Node SDK throws the following error types [1]:\n\n- **`DefaultOffersAuthenticationError`** \u2013 Authentication errors with the API (e.g., invalid API Key or Secret).\n- **`DefaultOffersRequestValidationError`** \u2013 Request or configs provided to the SDK are invalid; check `error.fields` for details on which fields failed validation.\n- **`DefaultOffersAPIError`** \u2013 A generic error raised for internal server errors or any error not covered by the named types.\n- **`DefaultOffersResourceNotFoundError`** \u2013 Raised when the API resource could not be found.\n\nThese errors can be caught via a `.catch()` on the returned Promise, or as the first argument of a callback [2]:\n\n```js\ndefaultOffersClient.defaultOffersService.getDefaultOffers(eep, headers).then(res => {\n    //success \n}).catch(err => {\n    //handle exception \n});\n```",
+      "cited_urls": [
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md",
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: offers Node SDK error types"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 0.7
+      },
+      "failure": null,
+      "judge_notes": "The answer lists all error types from the sources, but the reference answer does not include DefaultOffersResourceNotFoundError, so correctness is slightly lower."
+    },
+    {
+      "question": "What do I need to configure before the default offers SDK will work?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md",
+      "answer": "Based on the sources, you need to configure the following before the Default Offers SDK will work:\n\n**1. Install the package** [1]:\n```sh\nnpm install @americanexpress/default-offers-client-node\n```\n\n**2. Provide these configuration fields** [2]:\n\n- **`rootUrl`** *(required)* \u2013 provided by American Express based on environment (test/production)\n- **`authentication`** *(required)*:\n  - `clientKey` \u2013 OAuth key provided by American Express\n  - `clientSecret` \u2013 OAuth secret provided by American Express\n  - `bearerToken` \u2013 optional if you already have an active token\n- **`mutualAuth`** *(required)*:\n  - `privateKey` \u2013 your private key in `.pem` format\n  - `publicCert` \u2013 your public certificate\n- **`httpProxy`** \u2013 optional, only if calling over internet [2]\n\n```js\nconst fs = require('fs');\nconst defaultOffersClient = require('@americanexpress/default-offers-client-node');\n\nconst config = {\n    rootUrl: 'api.qasb2s.americanexpress.com',\n    authentication: {\n        clientKey: '',\n        clientSecret: ''\n    },\n    mutualAuth: {\n        privateKey: fs.readFileSync(''),\n        publicCert: fs.readFileSync('')\n    }\n};\n\ndefaultOffersClient.configure(config);\n```\n\n**3. Obtain a bearer token** [2] before making API calls:\n```js\ndefaultOffersClient.authentication.getBearerToken().then(resp => {\n    defaultOffersClient.setBearerToken(resp.access_token);\n});\n```",
+      "cited_urls": [
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md",
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: default offers SDK configuration setup"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All configuration requirements (OAuth and Mutual Auth) are correctly described and supported by the sources."
+    },
+    {
+      "question": "What goes in config.json before running the default offers samples?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/defaultoffers-client-node/blob/main/samples/README.md",
+      "answer": "Based on the samples README, `config.json` needs the following fields before running the default offers samples [1]:\n\n```json\n{\n    \"rootUrl\": \"api.qa2s.americanexpress.com\",\n    \"authentication\": {\n        \"clientKey\": \"\",\n        \"clientSecret\": \"\"\n    },\n    \"mutualAuth\": {\n        \"privateKey\": \"\",\n        \"publicCert\": \"\"\n    },\n    \"httpProxy\": {\n        \"isEnabled\": false,\n        \"host\": \"\",\n        \"port\": \"\"\n    }\n}\n```\n\n- **`rootUrl`** \u2013 the API environment URL (test or production), provided by AMEX [2]\n- **`clientKey` / `clientSecret`** \u2013 your OAuth credentials, provided by American Express [2]\n- **`privateKey` / `publicCert`** \u2013 file paths to your mutual auth (2-way SSL) `.pem` files; the sample code reads them with `fs.readFileSync` at runtime [3]\n- **`httpProxy`** \u2013 set `isEnabled: true` with `host` and `port` only if you need to call the API over a proxy [2]\n\nNote: unlike the targeted-offers SDK, the default offers SDK does **not** have a `payloadEncryption` section in its config [1].",
+      "cited_urls": [
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/samples/README.md",
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md",
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/samples/sdk/getDefaultOffersSample.js"
+      ],
+      "searches": [
+        "search_docs: config.json default offers samples",
+        "search_code: config.json offers samples American Express",
+        "search_docs: update config.json samples directory offers"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 0.07142857142857142,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The answer is fully supported by the sources, directly addresses the question, and matches the reference answer."
+    },
+    {
+      "question": "How do I get and set a bearer token with the Amex Prefill Node SDK?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/prefill-client-node/blob/master/readme.md",
+      "answer": "## Getting and Setting a Bearer Token with the Prefill Node SDK\n\n### 1. Get a Bearer Token\n\nCall `getBearerToken()` and then set it on the client: [1]\n\n```js\nprefillclient.authentication.getBearerToken().then(resp => {\n    prefillclient.setBearerToken(resp.access_token);\n});\n```\n\nThe response looks like: [1]\n\n```js\n{\n  scope: 'default',\n  status: 'approved',\n  expires_in: '3599', // seconds; you can cache for this duration\n  token_type: 'BearerToken',\n  access_token: 'access_token_example'\n}\n```\n\n### 2. Skip the Call if You Have a Cached Token\n\nIf you already have an active token, you can either: [1]\n\n- Set it directly in the config under `authentication.bearerToken`, **or**\n- Call `prefillclient.setBearerToken('access_token')` to update the config without making an auth request.\n\n```js\n// In config\nauthentication: {\n    bearerToken: 'your_cached_token', // set here to skip getBearerToken()\n    clientKey: '',\n    clientSecret: ''\n}\n```\n[2]",
+      "cited_urls": [
+        "https://github.com/americanexpress/prefill-client-node/blob/master/readme.md",
+        "https://github.com/americanexpress/prefill-client-node/blob/master/readme.md"
+      ],
+      "searches": [
+        "search_docs: Amex Prefill Node SDK bearer token get set"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The answer accurately describes how to get and set a bearer token using the SDK, matching the reference answer and supported by the sources."
+    },
+    {
+      "question": "What does the prefill client SDK need to be configured with?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/prefill-client-node/blob/master/readme.md",
+      "answer": "Based on the sources, the prefill client SDK needs to be configured with three main components [1]:\n\n1. **OAuth configuration** \u2013 `clientKey` and `clientSecret` (provided by Amex); optionally a `bearerToken` if you already have an active one.\n2. **Mutual Auth (2-way SSL)** \u2013 a `privateKey` (.pem format) and `publicCert`.\n3. **Payload Encryption (JWE)** \u2013 a `publicKeyCert` (.pem file provided by Amex).\n\nOptionally, an **HTTP proxy** can be configured if calling APIs over the internet [1].\n\n```js\nconst prefillclient = require('@americanexpress/prefill-client-node');\nconst config = {\n    rootUrl: 'api.qa2s.americanexpress.com',\n    authentication: {\n        clientKey: '',\n        clientSecret: ''\n    },\n    mutualAuth: {\n        privateKey: fs.readFileSync(''),\n        publicCert: fs.readFileSync('')\n    },\n    httpProxy: {\n        isEnabled: false,\n        host: '',\n        port: ''\n    },\n    payloadEncryption: {\n        publicKeyCert: fs.readFileSync('')\n    }\n}\nprefillclient.configure(config);\n```\n[1]",
+      "cited_urls": [
+        "https://github.com/americanexpress/prefill-client-node/blob/master/readme.md"
+      ],
+      "searches": [
+        "search_docs: prefill client SDK configuration"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The answer is fully supported by the sources, directly addresses the question, and matches the reference answer."
+    },
+    {
+      "question": "How do I enable payload encryption in the targeted offers client?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/targeted-offers-client/blob/master/README.md",
+      "answer": "## Enabling Payload Encryption in Targeted Offers Client\n\nSet `payloadEncryption.isEnabled` to `true` in your config and provide the `publicKeyCert` (a `.pem` file provided by American Express) [1]:\n\n```js\nconst fs = require('fs');\nconst offersclient = require('@americanexpress/targeted-offers-client');\n\nconst config = {\n    rootUrl: 'api.qa2s.americanexpress.com',\n    authentication: {\n        clientKey: '',\n        clientSecret: ''\n    },\n    mutualAuth: {\n        privateKey: fs.readFileSync(''),\n        publicCert: fs.readFileSync('')\n    },\n    payloadEncryption: {\n        isEnabled: true,           // set to true to enable\n        publicKeyCert: fs.readFileSync('publicKey.pem') // provided by Amex\n    }\n};\n\noffersclient.configure(config);\n```\n\nTwo key points [1]:\n- **`isEnabled`** must be set to `true` (defaults to `false`)\n- **`publicKeyCert`** is required when encryption is enabled \u2014 the `publicKey.pem` file is provided by American Express\n\nIf something goes wrong during encryption, a `PayloadEncryptionError` will be thrown with more detail in the error message [2].",
+      "cited_urls": [
+        "https://github.com/americanexpress/targeted-offers-client/blob/master/README.md",
+        "https://github.com/americanexpress/targeted-offers-client/blob/master/README.md"
+      ],
+      "searches": [
+        "search_docs: payload encryption targeted offers client"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported by the sources, the answer directly addresses the question, and it matches the reference answer."
+    },
+    {
+      "question": "What is EarlyBird and what does it detect?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/earlybird/blob/main/README.md",
+      "answer": "## EarlyBird Overview\n\nEarlyBird is a **sensitive data detection tool** capable of scanning source code repositories for clear text password violations, PII, outdated cryptography methods, key files, and more. It can scan remote git repositories, local files/directories, or run as a pre-commit step. [1]\n\n## What It Detects\n\nEarlyBird uses modules to define what it scans for [2]:\n\n- **Filename patterns** (`filename`): Flags files like `id_rsa` or files ending in `.pem` that suggest credentials or keys [2]\n- **File content patterns** (`content`): Detects passwords, RSA private keys, SSNs, IBANs, IP addresses, email addresses, phone numbers, insecure crypto algorithms, and suspicious comments like `HACK`/`FIXME` [2]\n- **High-entropy strings** (`entropy`): Flags strings like `kwaKM@\u00a3rFKAM3(a2klma2d` that may be hidden secrets [2]\n- **Credit card numbers** (`ccnumber`): Matches card number patterns and validates them via Luhn/mod10 check, ignoring known test values [2]\n- **Common/default passwords** (`common`): Scans for commonly used or abused passwords [2]\n\n## Quick Start\n\n```bash\n# Scan a local directory\ngo-earlybird --path=/path/to/directory\n\n# Scan a remote git repo\ngo-earlybird --git=https://github.com/americanexpress/earlybird\n```\n[1]",
+      "cited_urls": [
+        "https://github.com/americanexpress/earlybird/blob/main/README.md",
+        "https://github.com/americanexpress/earlybird/blob/main/docs/MODULES.md"
+      ],
+      "searches": [
+        "search_docs: EarlyBird what does it detect"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 0.3333333333333333,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported by the sources, the answer directly addresses what EarlyBird is and what it detects, and it matches the reference answer."
+    },
+    {
+      "question": "How do I make EarlyBird scan only files that are staged in git?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/earlybird/blob/main/docs/USAGE.md",
+      "answer": "Use the `-git-staged` flag when running EarlyBird [1]:\n\n```\ngo-earlybird --git-staged\n```\n\nThis limits the scan to only files that are currently staged in Git [1]. You can also combine it with other flags, for example in a pre-commit hook [2]:\n\n```\ngo-earlybird --fail-severity=high --git-staged --format=json --file=pre-commit-output.log\n```",
+      "cited_urls": [
+        "https://github.com/americanexpress/earlybird/blob/main/docs/USAGE.md",
+        "https://github.com/americanexpress/earlybird/blob/main/docs/HOOKS.md"
+      ],
+      "searches": [
+        "search_docs: EarlyBird scan staged git files"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported by the sources and the answer matches the reference answer."
+    },
+    {
+      "question": "How do I tell EarlyBird to skip certain files or lines?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/earlybird/blob/main/docs/IGNORE.md",
+      "answer": "## Skipping Files and Lines in EarlyBird\n\nThere are two mechanisms:\n\n### 1. Ignoring Files\n\nAdd file patterns to either [1]:\n- **`.ge_ignore`** file\n- **`.gitignore`** file\n- A custom file specified with the `--ignorefile` flag\n\n### 2. Ignoring Lines\n\nAdd the `EARLYBIRD-IGNORE` annotation as a comment on any line you want skipped [1]:\n\n```java\nString test_pass = \"unit_test\"; //EARLYBIRD-IGNORE\n```\n\n### Bonus: Adjusting Severity Instead of Skipping\n\nIf you don't want to fully ignore findings but want to reduce their severity (e.g., for test directories), configure `adjusted_severity_categories_patterns` in `earlybird.json` [1]:\n\n```json\n\"adjusted_severity_categories_patterns\": [\n  {\n    \"category\": \"password-secret\",\n    \"patterns\": [\"(?i)/test/\", \"(?i)/tests/\"],\n    \"adjusted_display_severity\": \"medium\",\n    \"use_filename\": true\n  }\n]\n```",
+      "cited_urls": [
+        "https://github.com/americanexpress/earlybird/blob/main/docs/IGNORE.md"
+      ],
+      "searches": [
+        "search_docs: EarlyBird skip files lines ignore"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported by the sources and the answer directly and correctly addresses the question."
+    },
+    {
+      "question": "Does EarlyBird avoid flagging fake credit card numbers used in tests?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/earlybird/blob/main/docs/MODULES.md",
+      "answer": "Yes. The **Credit Card Numbers (ccnumber)** module passes any potential hits through a **Luhn/mod10 check** to verify they are valid card numbers, and all numbers identified as designated test values are ignored. [1]",
+      "cited_urls": [
+        "https://github.com/americanexpress/earlybird/blob/main/docs/MODULES.md"
+      ],
+      "searches": [
+        "search_docs: EarlyBird fake credit card numbers test false positive"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 0.5,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The answer is fully supported by the sources and matches the reference answer."
+    },
+    {
+      "question": "Can EarlyBird run as a web service rather than a command line tool?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/earlybird/blob/main/docs/REST.md",
+      "answer": "Yes. EarlyBird has a built-in HTTP/REST API mode. [1][2]\n\n**Start it as an HTTP server:**\n```shell\ngo-earlybird --http 0.0.0.0:3000\n```\n\n**Or as HTTPS/2** (requires cert and key): [1]\n```shell\ngo-earlybird --https 0.0.0.0:3000 --https-cert /path/to/cert --https-key /path/to/key\n```\n\n**Available endpoints:** [1]\n\n| Endpoint | Description |\n|---|---|\n| `POST /scan` | Upload a file (multipart) and scan it |\n| `/scan/git?url=https://example.com/repo.git` | Clone and scan a remote git repo |\n| `/labels` | Return all labels from config |\n| `/categories` | Return all rule categories |\n| `/categorylabels` | Return labels per category |\n\n**Example scan request:** [1]\n```shell\ncurl -L -X POST 'http://localhost:3000/scan' -F 'scan=@/example/myfile.txt'\n```\n\nThe webserver config file is at `~/.go-earlybird/webserver.json` (Linux/Mac) or `C:\\Users\\[user]\\AppData\\go-earlybird\\webserver.json` (Windows), and a custom config path can be set with `--http-config [/path/to/configfile]`. [1]",
+      "cited_urls": [
+        "https://github.com/americanexpress/earlybird/blob/main/docs/REST.md",
+        "https://github.com/americanexpress/earlybird/blob/main/docs/USAGE.md"
+      ],
+      "searches": [
+        "search_docs: EarlyBird web service"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported by the sources and the answer matches the reference."
+    },
+    {
+      "question": "How do I add jest-image-snapshot to my Jest tests?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md",
+      "answer": "## Adding jest-image-snapshot to Your Jest Tests\n\n### 1. Install the package\n\n```bash\nnpm i --save-dev jest-image-snapshot\n```\n\nNote: Jest `>=20 <=29` is required as a peer dependency. [1]\n\n### 2. Extend Jest's `expect`\n\n```javascript\nconst { toMatchImageSnapshot } = require('jest-image-snapshot');\n\nexpect.extend({ toMatchImageSnapshot });\n```\n[1]\n\n### 3. Use the matcher in your tests\n\n```javascript\nit('should demonstrate this matcher`s usage', () => {\n  // ...\n  expect(image).toMatchImageSnapshot();\n});\n```\n[1]\n\n### Example with Puppeteer\n\n```javascript\nit('renders correctly', async () => {\n  const page = await browser.newPage();\n  await page.goto('https://localhost:3000');\n  const image = await page.screenshot();\n\n  expect(image).toMatchImageSnapshot();\n});\n```\n[1]\n\nOn the first run, a baseline snapshot is stored in a `__image_snapshots__` directory. Subsequent runs compare against that baseline. To update snapshots, run Jest with `--updateSnapshot` or `-u`. [2]",
+      "cited_urls": [
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md",
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: jest-image-snapshot add Jest tests setup"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All steps are correct, supported by sources, and match the reference answer."
+    },
+    {
+      "question": "What does failureThreshold control in jest-image-snapshot, and what are the allowed threshold types?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md",
+      "answer": "## `failureThreshold` in jest-image-snapshot\n\n`failureThreshold` sets the maximum allowed difference between the snapshot and the received image before the test fails. [1]\n\n### `failureThresholdType` options\n\nThe two allowed values are `'pixel'` and `'percent'`: [1][2][3]\n\n- **`'pixel'`** \u2014 threshold is a raw pixel count. The test fails if the number of differing pixels exceeds the value. [3]\n- **`'percent'`** \u2014 threshold is a ratio (e.g. `0.01` = 1%). The test fails if the differing pixel ratio exceeds the value. [1]\n\n### Examples\n\n**Percent-based:**\n```javascript\nexpect(image).toMatchImageSnapshot({\n  failureThreshold: 0.01,\n  failureThresholdType: 'percent'\n});\n```\n[1]\n\n**Pixel-based:**\n```javascript\n// passes if differing pixels <= 250\nexpect(image).toMatchImageSnapshot({\n  failureThreshold: 250,\n  failureThresholdType: 'pixel'\n});\n```\n[3]\n\n**With SSIM:**\n```javascript\nexpect(image).toMatchImageSnapshot({\n  comparisonMethod: 'ssim',\n  failureThreshold: 0.01,\n  failureThresholdType: 'percent'\n});\n```\n[4]\n\nThe sources do not specify what the default value of `failureThreshold` or `failureThresholdType` is when neither is provided.",
+      "cited_urls": [
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md",
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/__tests__/diff-snapshot.spec.js",
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/__tests__/diff-snapshot.spec.js",
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: failureThreshold threshold types jest-image-snapshot",
+        "search_code: failureThreshold failureThresholdType pixel percent jest-image-snapshot"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported, answer is relevant, and matches the reference answer."
+    },
+    {
+      "question": "How do I update stored image snapshots when the UI legitimately changed?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md",
+      "answer": "Run Jest with the `--updateSnapshot` or `-u` flag [1][2]:\n\n```bash\njest --updateSnapshot\n# or\njest -u\n```\n\nThis works the same way as standard Jest snapshots \u2014 it will overwrite the stored baseline images in the `__image_snapshots__` directory (or your `customSnapshotsDir` if configured) with the new images [1].",
+      "cited_urls": [
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md",
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: update stored image snapshots UI changed"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 0.5,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported by the sources and the answer matches the reference answer."
+    },
+    {
+      "question": "Which image comparison library does jest-image-snapshot use under the hood?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md",
+      "answer": "`jest-image-snapshot` uses [**pixelmatch**](https://github.com/mapbox/pixelmatch) by default, and also supports [**ssim.js**](https://github.com/obartra/ssim) as an alternative comparison method. [1][2]\n\nYou can select between them via the `comparisonMethod` option:\n\n```javascript\nexpect(image).toMatchImageSnapshot({\n  comparisonMethod: 'ssim', // default is 'pixelmatch'\n});\n```\n\n- **pixelmatch** does a pixel-by-pixel comparison. [2]\n- **ssim** does a structural similarity comparison and can reduce false positives. [3]",
+      "cited_urls": [
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md",
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md",
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: jest-image-snapshot image comparison library"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported by the sources and the answer matches the reference."
+    },
+    {
+      "question": "How do I fetch data in a React component using fetchye?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/fetchye/blob/main/README.md",
+      "answer": "## Fetching Data with `useFetchye`\n\nImport and call `useFetchye` with a URL in your component. It returns `isLoading`, `data`, and `error`: [1]\n\n```js\nimport { useFetchye } from 'fetchye';\n\nconst MyComponent = () => {\n  const { isLoading, data } = useFetchye('http://example.com/api/profile');\n  return (\n    !isLoading && (\n      <p>{data?.body.name}</p>\n    )\n  );\n};\n```\n\n### With error handling and options [1]\n\n```jsx\nimport { useFetchye } from 'fetchye';\n\nconst BookList = ({ genre }) => {\n  const { isLoading, error, data } = useFetchye(\n    `http://example.com/api/books/?genre=${genre}`,\n    {\n      headers: { 'X-Some-Tracer-Id': 1234 },\n    }\n  );\n\n  if (isLoading) return <p>Loading...</p>;\n  if (error || data.status !== 200) return <p>Oops!</p>;\n\n  // render data...\n};\n```\n\n### With a refresh button [2]\n\n```jsx\nconst { isLoading, data: booksData, run } = useFetchye(\n  `http://example.com/api/books/?genre=${genre}`\n);\n\n// ...\n<button type=\"button\" onClick={() => run()}>Refresh</button>\n```\n\n### Prerequisites\n\n`useFetchye` requires a provider wrapping your component tree. The simplest option is `FetchyeProvider`: [3]\n\n```jsx\nimport { FetchyeProvider } from 'fetchye';\n\nconst ParentComponent = ({ children }) => (\n  <FetchyeProvider>\n    {children}\n  </FetchyeProvider>\n);\n```\n\nAlternatively, use `FetchyeReduxProvider` if your project uses Redux. [4]",
+      "cited_urls": [
+        "https://github.com/americanexpress/fetchye/blob/main/README.md",
+        "https://github.com/americanexpress/fetchye/blob/main/README.md",
+        "https://github.com/americanexpress/fetchye/blob/main/README.md",
+        "https://github.com/americanexpress/fetchye/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: fetchye fetch data React component"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The answer is fully supported by the sources, directly addresses the question, and matches the reference answer."
+    },
+    {
+      "question": "What is fetchye and what API does it model itself on?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/fetchye/blob/main/README.md",
+      "answer": "Based on the sources, **fetchye** (pronounced \"fetch-yae\") is a React Hooks-based data fetching library with centralized caching. [1]\n\nIt models itself on the **ES6 Fetch API** \u2014 if you know how to use `fetch`, you know how to use fetchye. [1]\n\n```js\nimport { useFetchye } from 'fetchye';\n\nconst MyComponent = () => {\n  const { isLoading, data } = useFetchye('http://example.com/api/profile');\n  return (\n    !isLoading && <p>{data?.body.name}</p>\n  );\n};\n```\n[1]\n\nKey features include: [1]\n- **ES6 Fetch** powered by React Hooks\n- **Pure React or Redux** shared cache modes\n- **Headless per-Hook** cache mode\n- **SSR-friendly**\n\nThe `fetchClient` parameter throughout the API is explicitly typed as an **ES6 Fetch**-compatible function, and fetch options passed are standard `ES6FetchOptions` compatible with the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API). [2]",
+      "cited_urls": [
+        "https://github.com/americanexpress/fetchye/blob/main/README.md",
+        "https://github.com/americanexpress/fetchye/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: fetchye what is it API models itself on",
+        "search_docs: fetchye useSWR useQuery React hooks data fetching",
+        "search_docs: fetchye inspired by useQuery useSWR React Query design",
+        "search_code: fetchye modeled after useSWR useQuery inspiration",
+        "search_docs: fetchye fetch API window.fetch"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "All claims are supported, and the answer matches the reference and addresses the question."
+    },
+    {
+      "question": "How do I report a security vulnerability in fetchye?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/fetchye/blob/main/SECURITY.md",
+      "answer": "Email your report to [responsible.disclosure@aexp.com](mailto:responsible.disclosure@aexp.com) and include [1]:\n\n1. A description of the issue and where it is located.\n2. A description of the steps required to reproduce the issue.\n\nNote that you should **not** attempt to hack, access, copy, or adversely impact American Express applications, systems, or data as part of your research. [1]",
+      "cited_urls": [
+        "https://github.com/americanexpress/fetchye/blob/main/SECURITY.md"
+      ],
+      "searches": [
+        "search_docs: fetchye security vulnerability report"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 0.25,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The answer is fully supported by the sources and matches the reference answer."
+    },
+    {
+      "question": "What is unify-flowret?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/unify-flowret/blob/main/readme.md",
+      "answer": "Based on the sources, **Flowret** is a lightweight Java-based orchestration/workflow engine [1].\n\nKey characteristics:\n\n- **Name origin**: Derived from \"floret\" (a small/budding flower) with \"flow\" incorporated [1]\n- **Java support**: Works with Java 8 and later [2]\n- **Core capability**: Orchestrates sequential and parallel execution of steps and routes in a defined process [2]\n\nIt supports:\n- **Parallel processing** via `p_route`/`p_join` constructs, executing branches on separate threads [3]\n- **Crash recovery** by writing process state after each step, allowing resumption from the last recorded state [4]\n- **SLA and work management** for tracking work baskets and SLA milestones [4]\n\nIt is available via Maven: [1]\n\n```xml\n<groupId>com.americanexpress.unify.flowret</groupId>\n<artifactId>unify-flowret</artifactId>\n<version>2.0.1</version>\n```\n\nInternally, it uses the **unify-jdocs** library for JSON reading/writing, which must be initialized before Flowret: [3]\n\n```java\nJDocument.init(new Initializer());\nFlowret.init(10, 30000, \"-\");\n```",
+      "cited_urls": [
+        "https://github.com/americanexpress/unify-flowret/blob/main/readme.md",
+        "https://github.com/americanexpress/unify-flowret/blob/main/readme.md",
+        "https://github.com/americanexpress/unify-flowret/blob/main/readme.md",
+        "https://github.com/americanexpress/unify-flowret/blob/main/readme.md"
+      ],
+      "searches": [
+        "search_docs: unify-flowret"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 1.0,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0,
+        "answer_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The answer is fully supported by the sources, directly addresses the question, and matches the reference answer."
+    },
+    {
+      "question": "How do I contribute a change to jest-image-snapshot?",
+      "tier": "gold",
+      "expected_source_url": "https://github.com/americanexpress/jest-image-snapshot/blob/main/CONTRIBUTING.md",
+      "answer": "Based on the contributing guide [1], here are the steps:\n\n1. **Fork & clone** the repo:\n   ```bash\n   git clone https://github.com/<your-github-username>/jest-image-snapshot\n   cd jest-image-snapshot\n   ```\n\n2. **Use the correct Node version** (specified in `.nvmrc`):\n   ```bash\n   nvm use\n   ```\n\n3. **Install dependencies**:\n   ```bash\n   npm install\n   ```\n\n4. **Verify your changes** using these scripts [1]:\n   - `npm run lint` \u2014 checks code style against [`eslint-config-amex`](https://github.com/americanexpress/eslint-config-amex)\n   - `npm test` \u2014 runs unit tests and validates commit message format\n   - `npm run posttest` \u2014 runs linting, checks [conventional commits](https://www.conventionalcommits.org/) format, and verifies `package-lock.json` uses public NPM registry URLs\n\n5. **For new features**, your PR should include [1]:\n   - A clear description of the problem your feature solves\n   - A code snippet example of the new feature\n   - A step-by-step description of the enhancement\n\nAlso note: if you want to get **paid** for your contributions, you can send your resume to `oneamex.careers@aexp.com` [2].",
+      "cited_urls": [
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/CONTRIBUTING.md",
+        "https://github.com/americanexpress/jest-image-snapshot/blob/main/README.md"
+      ],
+      "searches": [
+        "search_docs: jest-image-snapshot contributing changes"
+      ],
+      "metrics": {
+        "context_recall": 1.0,
+        "citation_recall": 1.0,
+        "reciprocal_rank": 0.5,
+        "faithfulness": 0.9,
+        "answer_relevance": 1.0,
+        "answer_correctness": 0.8
+      },
+      "failure": null,
+      "judge_notes": "The answer omits mention of the contributor license agreement and expectations for pull requests, but otherwise follows the sources."
+    },
+    {
+      "question": "How do I configure Stripe webhooks for recurring subscription billing?",
+      "tier": "gold",
+      "expected_source_url": "",
+      "answer": "The provided sources do not contain any information about Stripe, webhooks, or subscription billing configuration. This question is outside the scope of the American Express open-source project documentation provided.",
+      "cited_urls": [],
+      "searches": [
+        "search_docs: Stripe webhooks recurring subscription billing"
+      ],
+      "metrics": {
+        "refusal_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The assistant correctly declined to answer, stating the sources do not cover Stripe."
+    },
+    {
+      "question": "Is there an official Python SDK for the Amex APIs, and how do I install it?",
+      "tier": "gold",
+      "expected_source_url": "",
+      "answer": "Based on the provided sources, there is no mention of an official Python SDK for Amex APIs. The sources only cover:\n\n- **Node.js SDKs**: `targeted-offers-client` [1], `default-offers-client-node` [2], and `prefill-client-node` [3]\n- **Java**: `amex-api-java-client-core` [4]\n- **.NET**: `amex-api-dotnet-client-core` [5]\n\nI cannot confirm the existence of a Python SDK or provide installation instructions for one based on the available sources.",
+      "cited_urls": [
+        "https://github.com/americanexpress/targeted-offers-client/blob/master/README.md",
+        "https://github.com/americanexpress/defaultoffers-client-node/blob/main/README.md",
+        "https://github.com/americanexpress/prefill-client-node/blob/master/readme.md",
+        "https://github.com/americanexpress/amex-api-java-client-core/blob/master/README.md",
+        "https://github.com/americanexpress/amex-api-dotnet-client-core/blob/master/README.md"
+      ],
+      "searches": [
+        "search_docs: American Express Python SDK install",
+        "search_docs: American Express amex-api Python SDK pip install"
+      ],
+      "metrics": {
+        "refusal_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The assistant correctly declined to answer, stating the sources do not mention a Python SDK."
+    },
+    {
+      "question": "What are the production rate limits on the Amex Payments API \u2014 requests per second and daily quota?",
+      "tier": "gold",
+      "expected_source_url": "",
+      "answer": "The provided sources do not contain any information about production rate limits, requests per second, or daily quotas for the Amex Payments API. You would need to consult the [Amex for Developers portal](https://developer.americanexpress.com) directly or contact American Express developer support for that information.",
+      "cited_urls": [],
+      "searches": [
+        "search_docs: Amex Payments API rate limits requests per second daily quota",
+        "search_code: Amex Payments API rate limit throttle quota",
+        "search_issues: Amex Payments API rate limit requests per second quota exceeded"
+      ],
+      "metrics": {
+        "refusal_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The assistant clearly stated the sources do not contain the requested information and declined to answer."
+    },
+    {
+      "question": "How much does American Express charge merchants per transaction?",
+      "tier": "gold",
+      "expected_source_url": "",
+      "answer": "I could not find anything relevant in the indexed American Express repositories for that question.",
+      "cited_urls": [],
+      "searches": [],
+      "metrics": {
+        "refusal_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The assistant clearly declined to answer and stated the sources do not cover this."
+    },
+    {
+      "question": "How do I deploy the Amex prefill client to AWS Lambda with the right IAM role?",
+      "tier": "gold",
+      "expected_source_url": "",
+      "answer": "The provided sources do not contain any information about deploying the prefill client to AWS Lambda or configuring IAM roles. The sources only cover SDK installation, configuration, authentication, and API usage for the `prefill-client-node` SDK.",
+      "cited_urls": [],
+      "searches": [
+        "search_docs: Amex prefill client AWS Lambda IAM role deploy",
+        "search_code: prefill client Lambda handler IAM role deployment",
+        "search_issues: prefill client AWS Lambda IAM role deploy",
+        "search_docs: prefill client node AWS credentials IAM serverless deployment"
+      ],
+      "metrics": {
+        "refusal_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The assistant correctly stated that the sources do not cover AWS Lambda deployment or IAM roles."
+    },
+    {
+      "question": "What is the EarlyBird --deep-scan flag for?",
+      "tier": "gold",
+      "expected_source_url": "",
+      "answer": "The sources do not contain any mention of a `--deep-scan` flag in EarlyBird. It does not appear in the CLI flag definitions [1], [2], [3], the usage documentation [1], [4], or anywhere else in the provided sources.",
+      "cited_urls": [
+        "https://github.com/americanexpress/earlybird/blob/main/docs/USAGE.md",
+        "https://github.com/americanexpress/earlybird/blob/main/pkg/core/const.go",
+        "https://github.com/americanexpress/earlybird/blob/main/pkg/core/const.go",
+        "https://github.com/americanexpress/earlybird/blob/main/docs/USAGE.md"
+      ],
+      "searches": [
+        "search_docs: EarlyBird --deep-scan flag",
+        "search_code: deep-scan EarlyBird",
+        "search_issues: EarlyBird deep-scan flag",
+        "search_code: deep_scan deepScan EarlyBird flag scan",
+        "search_code: EarlyBird scan flags options cobra command"
+      ],
+      "metrics": {
+        "refusal_correctness": 1.0
+      },
+      "failure": null,
+      "judge_notes": "The assistant correctly stated that the sources do not mention the --deep-scan flag."
+    }
+  ]
+}
